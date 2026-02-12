@@ -19,10 +19,12 @@ const router = express.Router();
 const authRoutes = require('./auth.routes');
 const homeRoutes = require('./home.routes');
 const userRoutes = require('./user.routes');
+const dashboardRoutes = require('./dashboard.routes');
 
 // Mount routes
-router.use('/auth', authRoutes);     // /api/auth/login, /api/auth/register, etc.
-router.use('/home', homeRoutes);     // /api/home/dashboard, /api/home/about, etc.
-router.use('/users', userRoutes);    // /api/users/search, /api/users/:id, etc.
+router.use('/auth', authRoutes);         // /api/auth/login, /api/auth/register, etc.
+router.use('/home', homeRoutes);         // /api/home/dashboard, /api/home/about, etc.
+router.use('/users', userRoutes);        // /api/users/search, /api/users/:id, etc.
+router.use('/dashboard', dashboardRoutes); // /api/dashboard/summary, /credentials, etc.
 
 module.exports = router;

@@ -46,6 +46,15 @@ import DashboardPage from './pages/home/DashboardPage';
 import AboutPage from './pages/home/AboutPage';
 import LearnMorePage from './pages/home/LearnMorePage';
 
+// Dashboard Detail Pages
+import CredentialsPage from './pages/credentials/CredentialsPage';
+import TestsPage from './pages/tests/TestsPage';
+import InvoicesPage from './pages/invoices/InvoicesPage';
+import BillsPage from './pages/bills/BillsPage';
+import ApplicationsPage from './pages/applications/ApplicationsPage';
+import LogbookPage from './pages/logbook/LogbookPage';
+import ProfilePage from './pages/profile/ProfilePage';
+
 // Admin pages
 import DiagnosticsPage from './pages/admin/DiagnosticsPage';
 import UserSearchPage from './pages/admin/UserSearchPage';
@@ -98,6 +107,14 @@ function AppRoutes() {
 
           {/* Protected pages — require authentication */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/credentials" element={<ProtectedRoute><CredentialsPage /></ProtectedRoute>} />
+          <Route path="/tests" element={<ProtectedRoute><TestsPage /></ProtectedRoute>} />
+          <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+          <Route path="/bills" element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
+          <Route path="/applications" element={<ProtectedRoute><ApplicationsPage /></ProtectedRoute>} />
+          <Route path="/logbook" element={<ProtectedRoute><LogbookPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
           <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
 
           {/* Admin-only pages — require Admin role */}

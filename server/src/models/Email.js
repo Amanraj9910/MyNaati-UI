@@ -66,8 +66,25 @@ async function findPreferredByEntityId(entityId) {
     return result.recordset[0] || null;
 }
 
+/**
+ * Find all emails for an entity.
+ * 
+ * @param {number} entityId - The EntityId
+ * @returns {Promise<Object[]>} Array of email records
+ */
+async function findByEntityId(entityId) {
+    const result = await query(
+        `SELECT * FROM tblEmail
+         WHERE EntityId = @entityId
+         ORDER BY IsPreferredEmail DESC, EmailId DESC`,
+        { entityId: { type: sql.Int, value: entityId } }
+    );
+    return result.recordset;
+}
+
 module.exports = {
     create,
     findByEmail,
     findPreferredByEntityId,
+    findByEntityId,
 };
