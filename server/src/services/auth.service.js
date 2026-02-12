@@ -18,6 +18,7 @@ const UserModel = require('../models/User');
 const PersonModel = require('../models/Person');
 const EntityModel = require('../models/Entity');
 const MyNaatiUserModel = require('../models/MyNaatiUser');
+const EmailModel = require('../models/Email');
 const SecurityRoleModel = require('../models/SecurityRole');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken, generateMfaToken } = require('../utils/jwt');
@@ -71,18 +72,34 @@ async function login(username, password) {
     // Step 4: Reset failed attempts on successful password check
     await UserModel.resetFailedAttempts(user.UserId);
 
-    // Step 5: Resolve person ID from MyNaatiUser link
-    const myNaatiUser = await MyNaatiUserModel.findByUserId(user.UserId);
-    const personId = myNaatiUser ? myNaatiUser.PersonId : null;
+    // Step 5: Resolve person ID via Email link (User.Email -> tblEmail -> EntityId -> Person)
+    let personId = null;
+    let personDetails = null;
+
+    // Try to find the person linked to this user's email
+    const emailRecord = await EmailModel.findByEmail(user.Email);
+    if (emailRecord) {
+        const person = await PersonModel.findByEntityId(emailRecord.EntityId);
+        if (person) {
+            personId = person.PersonId;
+            personDetails = person;
+        }
+    }
+
+    // Fallback: Check MyNaatiUser table if legacy link exists
+    if (!personId) {
+        const myNaatiUser = await MyNaatiUserModel.findByUserId(user.UserId);
+        if (myNaatiUser) {
+            personId = myNaatiUser.PersonId;
+            // Fetch person details if we found ID via legacy link
+            if (!personDetails) {
+                personDetails = await PersonModel.findById(personId);
+            }
+        }
+    }
 
     // Step 6: Get user roles for the JWT payload
     const roles = await SecurityRoleModel.getUserRoles(user.UserId);
-
-    // Step 7: Get person details for the profile
-    let personDetails = null;
-    if (personId) {
-        personDetails = await PersonModel.findById(personId);
-    }
 
     // Step 8: Generate JWT tokens
     const tokenPayload = {
@@ -115,7 +132,7 @@ async function login(username, password) {
 /**
  * Register a new user account.
  * Creates records in the correct order respecting FK constraints:
- *   tblEntity → tblPerson → tblPersonName → tblUser → tblMyNaatiUser
+ *   tblEntity → tblPerson → tblPersonName → tblEmail → tblUser
  * 
  * @param {Object} data - Registration data
  * @param {string} data.givenName - Given/first name
@@ -142,7 +159,7 @@ async function register({ givenName, surname, email, password, middleName, dateO
         : `${givenName} ${surname}`;
 
     // Create records in FK-dependency order
-    // 1. Create entity (root record)
+    // 1. Create entity (root record) - required for both Person and Email
     const entityId = await EntityModel.create({ entityTypeId: 1 }); // 1 = Person type
 
     // 2. Create person linked to entity
@@ -160,16 +177,23 @@ async function register({ givenName, surname, email, password, middleName, dateO
         middleName: middleName || null,
     });
 
-    // 4. Create user account
+    // 4. Create email record linked to entity (Establishes the link for login lookup)
+    await EmailModel.create({
+        entityId,
+        email,
+    });
+
+    // 5. Create user account
     const userId = await UserModel.create({
         userName: email, // Use email as username
         fullName,
         email,
         password: passwordHash,
+        officeId: 1, // Default office
     });
 
-    // 5. Create MyNaati portal user link
-    await MyNaatiUserModel.create({ userId, personId });
+    // Note: We skip tblMyNaatiUser creation as it requires a NaatiNumber which new users don't have.
+    // The link is established via Email -> Entity -> Person.
 
     logger.info(`New user registered: ${email} (UserId: ${userId}, PersonId: ${personId})`);
 

@@ -37,21 +37,21 @@ async function getDashboardData(personId) {
         if (personName) {
             givenName = personName.GivenName;
             surname = personName.Surname;
-            greeting = `Welcome back, ${personName.GivenName}!`;
+            greeting = `Welcome back, ${personName.GivenName}! 👋`;
         }
     }
 
     return {
-        greeting,
+        greeting: greeting || 'Welcome to MyNaati 👋',
         givenName,
         surname,
         quickActions: [
-            { id: 'apply', title: 'Apply for Credential', icon: 'FileText', path: '/apply', description: 'Start a new credential application' },
-            { id: 'tests', title: 'My Tests', icon: 'ClipboardCheck', path: '/tests', description: 'View your scheduled and past tests' },
-            { id: 'credentials', title: 'My Credentials', icon: 'Award', path: '/credentials', description: 'View your issued credentials' },
-            { id: 'logbook', title: 'Logbook', icon: 'BookOpen', path: '/logbook', description: 'Log professional development activities' },
-            { id: 'bills', title: 'Bills & Invoices', icon: 'Receipt', path: '/bills', description: 'View and pay invoices' },
-            { id: 'profile', title: 'Personal Details', icon: 'User', path: '/profile', description: 'Update your personal information' },
+            { id: 'apply', title: 'Apply for Credential', emoji: '📝', icon: 'FileText', path: '/apply', description: 'Start a new credential application' },
+            { id: 'tests', title: 'My Tests', emoji: '📅', icon: 'ClipboardCheck', path: '/tests', description: 'View your scheduled and past tests' },
+            { id: 'credentials', title: 'My Credentials', emoji: '🏅', icon: 'Award', path: '/credentials', description: 'View your issued credentials' },
+            { id: 'logbook', title: 'Logbook', emoji: '📖', icon: 'BookOpen', path: '/logbook', description: 'Log professional development activities' },
+            { id: 'bills', title: 'Bills & Invoices', emoji: '🧾', icon: 'Receipt', path: '/bills', description: 'View and pay invoices' },
+            { id: 'profile', title: 'Personal Details', emoji: '👤', icon: 'User', path: '/profile', description: 'Update your personal information' },
         ],
     };
 }

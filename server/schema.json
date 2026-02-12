@@ -1,0 +1,12 @@
+{
+  "tblEmail": [
+    "EmailId (int, nullable=NO)",
+    "EntityId (int, nullable=NO)",
+    "Email (varchar, nullable=NO)",
+    "Note (varchar, nullable=NO)",
+    "IncludeInPD (bit, nullable=NO)",
+    "IsPreferredEmail (bit, nullable=NO)",
+    "Invalid (bit, nullable=NO)",
+    "ExaminerCorrespondence (bit, nullable=NO)"
+  ]
+}

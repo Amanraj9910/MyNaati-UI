@@ -50,8 +50,7 @@ function Navbar() {
             <div className="navbar-container">
                 {/* Logo / Brand */}
                 <Link to="/" className="navbar-brand">
-                    <span className="brand-icon">N</span>
-                    <span className="brand-text">MyNaati</span>
+                    <img src="/img/NAATIAltLogo.png" alt="MyNaati" style={{ height: '40px' }} />
                 </Link>
 
                 {/* Mobile hamburger toggle */}

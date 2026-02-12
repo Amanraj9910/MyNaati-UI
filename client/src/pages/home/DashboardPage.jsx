@@ -73,11 +73,10 @@ function DashboardPage() {
             {/* Quick Action Cards */}
             <div className="dashboard-grid">
                 {dashboardData?.quickActions?.map((action) => {
-                    const IconComponent = iconMap[action.icon] || FileText;
                     return (
                         <Link key={action.id} to={action.path} className="action-card">
-                            <div className="action-card-icon">
-                                <IconComponent size={28} />
+                            <div className="action-card-icon" style={{ background: 'transparent', fontSize: '2rem' }}>
+                                {action.emoji}
                             </div>
                             <div className="action-card-content">
                                 <h3>{action.title}</h3>

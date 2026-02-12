@@ -23,9 +23,9 @@ const { query, sql } = require('../config/database');
  */
 async function create({ entityTypeId }) {
     const result = await query(
-        `INSERT INTO tblEntity (EntityTypeId, ODHidden, ModifiedByNaati, ModifiedDate)
+        `INSERT INTO tblEntity (EntityTypeId, WebsiteURL, ABN, Note, UseEmail, WebsiteInPD, GSTApplies)
      OUTPUT INSERTED.EntityId
-     VALUES (@entityTypeId, 0, 0, GETDATE())`,
+     VALUES (@entityTypeId, '', '', '', 0, 0, 0)`,
         {
             entityTypeId: { type: sql.Int, value: entityTypeId },
         }

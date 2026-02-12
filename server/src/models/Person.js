@@ -23,15 +23,22 @@ const { query, sql } = require('../config/database');
  * @returns {Promise<number>} The newly created PersonId
  */
 async function create({ entityId, dateOfBirth = null, genderId = 1 }) {
+    // NameOnAccreditationProduct is required, use a placeholder or derive from context if possible. 
+    // Since we don't have the full name here, we'll use a placeholder string.
     const result = await query(
-        `INSERT INTO tblPerson (EntityId, DateOfBirth, GenderId, Deceased, LegislationExempt,
-       AccessDisabled, ODHidden, ODRestricted, ModifiedByNaati, ModifiedDate)
+        `INSERT INTO tblPerson (EntityId, Gender, BirthDate, Deceased, ReleaseDetails, DoNotInviteToDirectory,
+       EnteredDate, ExpertiseFreeText, NameOnAccreditationProduct, DoNotSendCorrespondence,
+       ScanRequired, AllowVerifyOnline, ShowPhotoOnline, EthicalCompetency, InterculturalCompetency,
+       AllowAutoRecertification, KnowledgeTest, IsDeleted, IncludeInPD)
      OUTPUT INSERTED.PersonId
-     VALUES (@entityId, @dateOfBirth, @genderId, 0, 0, 0, 0, 0, 0, GETDATE())`,
+     VALUES (@entityId, @gender, @birthDate, 0, 0, 0,
+       GETDATE(), '', 'Pending Name', 0,
+       0, 0, 0, 0, 0,
+       0, 0, 0, 0)`,
         {
             entityId: { type: sql.Int, value: entityId },
-            dateOfBirth: { type: sql.DateTime, value: dateOfBirth },
-            genderId: { type: sql.Int, value: genderId },
+            birthDate: { type: sql.DateTime, value: dateOfBirth },
+            gender: { type: sql.NChar, value: null }, // Schema says NChar for Gender, likely 'M'/'F' not ID
         }
     );
     return result.recordset[0].PersonId;
@@ -46,7 +53,7 @@ async function create({ entityId, dateOfBirth = null, genderId = 1 }) {
  */
 async function findById(personId) {
     const result = await query(
-        `SELECT p.*, pn.GivenName, pn.MiddleName, pn.Surname, pn.TitleId
+        `SELECT p.*, pn.GivenName, pn.OtherNames as MiddleName, pn.Surname, pn.TitleId
      FROM tblPerson p
      LEFT JOIN tblPersonName pn ON p.PersonId = pn.PersonId
        AND pn.EffectiveDate = (
@@ -66,7 +73,7 @@ async function findById(personId) {
  */
 async function findByEntityId(entityId) {
     const result = await query(
-        `SELECT p.*, pn.GivenName, pn.MiddleName, pn.Surname
+        `SELECT p.*, pn.GivenName, pn.OtherNames as MiddleName, pn.Surname
      FROM tblPerson p
      LEFT JOIN tblPersonName pn ON p.PersonId = pn.PersonId
        AND pn.EffectiveDate = (
@@ -92,17 +99,17 @@ async function findByEntityId(entityId) {
  */
 async function createName({ personId, givenName, surname, middleName = null, titleId = null }) {
     const result = await query(
-        `INSERT INTO tblPersonName (PersonId, TitleId, GivenName, MiddleName, Surname,
-       EffectiveDate, DisplayOnOd, ModifiedByNaati, ModifiedDate)
+        `INSERT INTO tblPersonName (PersonId, TitleId, GivenName, Surname, OtherNames,
+       EffectiveDate, AlternativeGivenName, AlternativeSurname)
      OUTPUT INSERTED.PersonNameId
-     VALUES (@personId, @titleId, @givenName, @middleName, @surname,
-       GETDATE(), 1, 0, GETDATE())`,
+     VALUES (@personId, @titleId, @givenName, @surname, @otherNames,
+       GETDATE(), '', '')`,
         {
             personId: { type: sql.Int, value: personId },
             titleId: { type: sql.Int, value: titleId },
-            givenName: { type: sql.NVarChar, value: givenName },
-            middleName: { type: sql.NVarChar, value: middleName },
-            surname: { type: sql.NVarChar, value: surname },
+            givenName: { type: sql.VarChar, value: givenName },
+            surname: { type: sql.VarChar, value: surname },
+            otherNames: { type: sql.VarChar, value: middleName || '' },
         }
     );
     return result.recordset[0].PersonNameId;
@@ -117,7 +124,7 @@ async function createName({ personId, givenName, surname, middleName = null, tit
  */
 async function getLatestName(personId) {
     const result = await query(
-        `SELECT TOP 1 PersonNameId, GivenName, MiddleName, Surname, TitleId, EffectiveDate
+        `SELECT TOP 1 PersonNameId, GivenName, OtherNames as MiddleName, Surname, TitleId, EffectiveDate
      FROM tblPersonName
      WHERE PersonId = @personId
      ORDER BY EffectiveDate DESC`,
