@@ -1,0 +1,110 @@
+--- Inspecting tblMyNaatiUser & tblEntity ---
+[
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "EntityId",
+    "DATA_TYPE": "int",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "WebsiteURL",
+    "DATA_TYPE": "varchar",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "ABN",
+    "DATA_TYPE": "varchar",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "Note",
+    "DATA_TYPE": "nvarchar",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "UseEmail",
+    "DATA_TYPE": "bit",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "WebsiteInPD",
+    "DATA_TYPE": "bit",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "GSTApplies",
+    "DATA_TYPE": "bit",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "NAATINumber",
+    "DATA_TYPE": "int",
+    "IS_NULLABLE": "YES"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "EntityTypeId",
+    "DATA_TYPE": "int",
+    "IS_NULLABLE": "YES"
+  },
+  {
+    "TABLE_NAME": "tblEntity",
+    "COLUMN_NAME": "AccountNumber",
+    "DATA_TYPE": "varchar",
+    "IS_NULLABLE": "YES"
+  },
+  {
+    "TABLE_NAME": "tblMyNaatiUser",
+    "COLUMN_NAME": "UserId",
+    "DATA_TYPE": "int",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblMyNaatiUser",
+    "COLUMN_NAME": "AspUserId",
+    "DATA_TYPE": "uniqueidentifier",
+    "IS_NULLABLE": "NO"
+  },
+  {
+    "TABLE_NAME": "tblMyNaatiUser",
+    "COLUMN_NAME": "NaatiNumber",
+    "DATA_TYPE": "int",
+    "IS_NULLABLE": "NO"
+  }
+]
+
+--- Sample Data (tblMyNaatiUser) ---
+[
+  {
+    "UserId": 1,
+    "AspUserId": "27036CB0-A08C-4334-AA62-000CF4A67E8F",
+    "NaatiNumber": 101441
+  },
+  {
+    "UserId": 2,
+    "AspUserId": "82C7A37F-EC66-4FE4-BAEB-001AE448EE0D",
+    "NaatiNumber": 9717
+  },
+  {
+    "UserId": 3,
+    "AspUserId": "424201B5-6969-4986-B9A0-002163698A85",
+    "NaatiNumber": 100866
+  },
+  {
+    "UserId": 4,
+    "AspUserId": "6BAA35F0-68AC-4731-A256-00460084F013",
+    "NaatiNumber": 27495
+  },
+  {
+    "UserId": 5,
+    "AspUserId": "62793098-0FD0-4A31-9DF5-0054117C5B1A",
+    "NaatiNumber": 200449
+  }
+]

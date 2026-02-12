@@ -68,8 +68,41 @@ async function findByUserId(userId) {
     return result.recordset[0] || null;
 }
 
+/**
+ * Link an ASP.NET User GUID to a NAATI Number.
+ * 
+ * @param {string} aspUserId - The ASP.NET User GUID
+ * @param {number} naatiNumber - The generated NAATI Number
+ * @returns {Promise<void>}
+ */
+async function linkUser(aspUserId, naatiNumber) {
+    await query(
+        `INSERT INTO tblMyNaatiUser (AspUserId, NaatiNumber)
+         VALUES (@aspUserId, @naatiNumber)`,
+        {
+            aspUserId: { type: sql.UniqueIdentifier, value: aspUserId },
+            naatiNumber: { type: sql.Int, value: naatiNumber }
+        }
+    );
+}
+
+/**
+ * Find a MyNaatiUser record by the ASP.NET User GUID.
+ * 
+ * @param {string} aspUserId 
+ * @returns {Promise<Object|null>}
+ */
+async function findByAspUserId(aspUserId) {
+    const result = await query(
+        `SELECT * FROM tblMyNaatiUser WHERE AspUserId = @aspUserId`,
+        { aspUserId: { type: sql.UniqueIdentifier, value: aspUserId } }
+    );
+    return result.recordset[0] || null;
+}
+
 module.exports = {
     create,
-    findByPersonId,
     findByUserId,
+    linkUser,
+    findByAspUserId,
 };

@@ -22,7 +22,7 @@ const { query, sql } = require('../config/database');
  * @param {number} [data.genderId=1] - Gender ID (reference value)
  * @returns {Promise<number>} The newly created PersonId
  */
-async function create({ entityId, dateOfBirth = null, genderId = 1 }) {
+async function create({ entityId, dateOfBirth = null, gender = 'U' }) {
     // NameOnAccreditationProduct is required, use a placeholder or derive from context if possible. 
     // Since we don't have the full name here, we'll use a placeholder string.
     const result = await query(
@@ -38,7 +38,7 @@ async function create({ entityId, dateOfBirth = null, genderId = 1 }) {
         {
             entityId: { type: sql.Int, value: entityId },
             birthDate: { type: sql.DateTime, value: dateOfBirth },
-            gender: { type: sql.NChar, value: null }, // Schema says NChar for Gender, likely 'M'/'F' not ID
+            gender: { type: sql.NChar, value: gender },
         }
     );
     return result.recordset[0].PersonId;

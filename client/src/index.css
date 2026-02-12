@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 /**
  * =============================================================================
  * MyNaati Frontend — Global Stylesheet
@@ -13,6 +15,10 @@
  *   - Card:    #16213e (Slightly lighter — card surfaces)
  *   - Text:    #e0e0ff (Light lavender — body text)
  */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ==========================================================================
    CSS Custom Properties (Design Tokens)
@@ -43,6 +49,17 @@
   /* Text - LIGHT MODE */
   --color-text: #334155;
   /* Slate 700 */
+
+  .naati-number-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
   --color-text-muted: #64748b;
   /* Slate 500 */
   --color-text-heading: #0f172a;
@@ -62,8 +79,10 @@
 
   /* Shadows - Light mode needs shadows for depth */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-glow: 0 0 15px rgba(0, 147, 130, 0.2);
 
   /* Transitions */
@@ -75,8 +94,6 @@
 /* ==========================================================================
    Base Reset & Typography
    ========================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 *,
 *::before,

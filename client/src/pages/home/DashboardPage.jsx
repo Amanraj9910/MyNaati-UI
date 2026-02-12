@@ -65,6 +65,9 @@ function DashboardPage() {
             <div className="dashboard-banner">
                 <div className="banner-content">
                     <h1>{dashboardData?.greeting || `Welcome, ${user?.givenName || 'User'}!`}</h1>
+                    {user?.naatiNumber && (
+                        <p className="naati-number-badge">NAATI Number: {user.naatiNumber}</p>
+                    )}
                     <p>What would you like to do today?</p>
                 </div>
                 <div className="banner-decoration" />

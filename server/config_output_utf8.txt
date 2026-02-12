@@ -1,0 +1,10 @@
+--- Fetching ApplicationId ---
+✅ Found Application:
+{
+  "ApplicationName": "/MyNaati",
+  "ApplicationId": "A4B7C679-ED79-491E-841D-34A65938D621",
+  "LoweredApplicationName": "/mynaati"
+}
+
+--- Checking for GUID columns in tblPerson/tblEntity ---
+[]

@@ -1,0 +1,40 @@
+{
+  "aspnet_Applications": [
+    "ApplicationName (nvarchar, nullable=NO)",
+    "LoweredApplicationName (nvarchar, nullable=NO)",
+    "ApplicationId (uniqueidentifier, nullable=NO)",
+    "Description (nvarchar, nullable=YES)"
+  ],
+  "aspnet_Membership": [
+    "ApplicationId (uniqueidentifier, nullable=NO)",
+    "UserId (uniqueidentifier, nullable=NO)",
+    "Password (nvarchar, nullable=NO)",
+    "PasswordFormat (int, nullable=NO)",
+    "PasswordSalt (nvarchar, nullable=NO)",
+    "MobilePIN (nvarchar, nullable=YES)",
+    "Email (nvarchar, nullable=YES)",
+    "LoweredEmail (nvarchar, nullable=YES)",
+    "PasswordQuestion (nvarchar, nullable=YES)",
+    "PasswordAnswer (nvarchar, nullable=YES)",
+    "IsApproved (bit, nullable=NO)",
+    "IsLockedOut (bit, nullable=NO)",
+    "CreateDate (datetime, nullable=NO)",
+    "LastLoginDate (datetime, nullable=NO)",
+    "LastPasswordChangedDate (datetime, nullable=NO)",
+    "LastLockoutDate (datetime, nullable=NO)",
+    "FailedPasswordAttemptCount (int, nullable=NO)",
+    "FailedPasswordAttemptWindowStart (datetime, nullable=NO)",
+    "FailedPasswordAnswerAttemptCount (int, nullable=NO)",
+    "FailedPasswordAnswerAttemptWindowStart (datetime, nullable=NO)",
+    "Comment (nvarchar, nullable=YES)"
+  ],
+  "aspnet_Users": [
+    "ApplicationId (uniqueidentifier, nullable=NO)",
+    "UserId (uniqueidentifier, nullable=NO)",
+    "UserName (nvarchar, nullable=NO)",
+    "LoweredUserName (nvarchar, nullable=NO)",
+    "MobileAlias (nvarchar, nullable=YES)",
+    "IsAnonymous (bit, nullable=NO)",
+    "LastActivityDate (datetime, nullable=NO)"
+  ]
+}

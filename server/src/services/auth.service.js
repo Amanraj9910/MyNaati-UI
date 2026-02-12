@@ -3,286 +3,318 @@
  * MyNaati Backend — Auth Service
  * =============================================================================
  * 
- * Core authentication business logic. Handles:
- *   - User login with password verification and account lockout
- *   - User registration (creates Entity → Person → PersonName → User → MyNaatiUser)
- *   - Password reset and change
- *   - MFA setup and verification
- *   - Token refresh
+ * Core authentication business logic for MyNaati (External Portal).
  * 
- * This is the business logic layer — routes call these functions,
- * and these functions call the database models.
+ * Uses ONLY MyNaati tables:
+ *   - aspnet_Users + aspnet_Membership (login credentials)
+ *   - tblMyNaatiUser (links ASP.NET user to NAATI domain)
+ *   - tblEntity + tblPerson + tblPersonName (profile data)
+ * 
+ * Does NOT touch tblUser (NCMS internal staff table).
+ * 
+ * Handles:
+ *   - User login with ASP.NET Membership password verification
+ *   - User registration (creates aspnet_Users → Membership → Entity → Person → MyNaatiUser)
+ *   - Password reset and change (via aspnet_Membership)
+ *   - Token refresh
  */
 
-const UserModel = require('../models/User');
+const sql = require('mssql');
+const crypto = require('crypto');
+const { query } = require('../config/database');
+const AspnetUserModel = require('../models/AspnetUser');
+const AspnetMembershipModel = require('../models/AspnetMembership');
+const KeyAllocationModel = require('../models/KeyAllocation');
+const MyNaatiUserModel = require('../models/MyNaatiUser');
+const PasswordUtils = require('../utils/password.utils');
 const PersonModel = require('../models/Person');
 const EntityModel = require('../models/Entity');
-const MyNaatiUserModel = require('../models/MyNaatiUser');
 const EmailModel = require('../models/Email');
-const SecurityRoleModel = require('../models/SecurityRole');
-const { hashPassword, comparePassword } = require('../utils/password');
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken, generateMfaToken } = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { generateSecret, generateQrCodeUrl, verifyToken: verifyMfaToken } = require('../utils/mfa');
 const logger = require('../utils/logger');
 
+// Helper to generate tokens
+function generateTokens(userPayload) {
+    const accessToken = generateAccessToken(userPayload);
+    const refreshToken = generateRefreshToken(userPayload.userId);
+    return { accessToken, refreshToken };
+}
+
 /**
- * Authenticate a user with username and password.
+ * Retrieve the person details for a MyNaati user via NaatiNumber.
+ * Shared helper used by login, refreshAccessToken, and getCurrentUser.
  * 
- * Flow:
- *   1. Find user by username
- *   2. Check if account is active and not locked
- *   3. Verify password against bcrypt hash
- *   4. If MFA is enabled, return MFA-pending token
- *   5. Generate access + refresh tokens
- *   6. Return user profile with tokens
- * 
- * @param {string} username - The login username
- * @param {string} password - The plaintext password
- * @returns {Promise<Object>} Login result with tokens or MFA requirement
- * @throws {Error} On invalid credentials, locked account, or inactive account
+ * @param {string} aspUserId - The ASP.NET User GUID
+ * @returns {Promise<{myNaatiLink: Object|null, personDetails: Object|null}>}
  */
-async function login(username, password) {
-    // Step 1: Find user by username
-    const user = await UserModel.findByUsername(username);
-    if (!user) {
-        throw Object.assign(new Error('Invalid username or password'), { statusCode: 401 });
-    }
-
-    // Step 2: Check account status
-    if (!user.Active) {
-        throw Object.assign(new Error('Account is inactive. Please contact NAATI support.'), { statusCode: 403 });
-    }
-
-    if (user.IsLockedOut) {
-        throw Object.assign(new Error('Account is locked due to too many failed attempts. Please contact NAATI support.'), { statusCode: 403 });
-    }
-
-    // Step 3: Verify password
-    const isValid = await comparePassword(password, user.Password);
-    if (!isValid) {
-        // Increment failed attempts (auto-locks after 5)
-        const attempts = await UserModel.incrementFailedAttempts(user.UserId);
-        const remaining = 5 - attempts;
-        const message = remaining > 0
-            ? `Invalid username or password. ${remaining} attempts remaining before lockout.`
-            : 'Account has been locked due to too many failed attempts.';
-        throw Object.assign(new Error(message), { statusCode: 401 });
-    }
-
-    // Step 4: Reset failed attempts on successful password check
-    await UserModel.resetFailedAttempts(user.UserId);
-
-    // Step 5: Resolve person ID via Email link (User.Email -> tblEmail -> EntityId -> Person)
-    let personId = null;
+async function getMyNaatiProfile(aspUserId) {
+    const myNaatiLink = await MyNaatiUserModel.findByAspUserId(aspUserId);
     let personDetails = null;
 
-    // Try to find the person linked to this user's email
-    const emailRecord = await EmailModel.findByEmail(user.Email);
-    if (emailRecord) {
-        const person = await PersonModel.findByEntityId(emailRecord.EntityId);
-        if (person) {
-            personId = person.PersonId;
-            personDetails = person;
+    if (myNaatiLink && myNaatiLink.NaatiNumber) {
+        const entityResult = await query(
+            'SELECT EntityId FROM tblEntity WHERE NAATINumber = @n',
+            { n: { type: sql.Int, value: myNaatiLink.NaatiNumber } }
+        );
+
+        if (entityResult.recordset.length > 0) {
+            const entityId = entityResult.recordset[0].EntityId;
+            personDetails = await PersonModel.findByEntityId(entityId);
         }
     }
 
-    // Fallback: Check MyNaatiUser table if legacy link exists
-    if (!personId) {
-        const myNaatiUser = await MyNaatiUserModel.findByUserId(user.UserId);
-        if (myNaatiUser) {
-            personId = myNaatiUser.PersonId;
-            // Fetch person details if we found ID via legacy link
-            if (!personDetails) {
-                personDetails = await PersonModel.findById(personId);
-            }
-        }
+    return { myNaatiLink, personDetails };
+}
+
+/**
+ * Authenticate a MyNaati user with username/email and password.
+ * 
+ * Flow:
+ *   1. Find user in aspnet_Users by username
+ *   2. Check aspnet_Membership for credentials (not locked, is approved)
+ *   3. Validate password against ASP.NET Membership hash+salt
+ *   4. Retrieve profile via tblMyNaatiUser → tblEntity → tblPerson
+ *   5. Generate access + refresh tokens
+ * 
+ * @param {string} username - The login username (typically email)
+ * @param {string} password - The plaintext password
+ * @returns {Promise<Object>} Login result with tokens
+ * @throws {Error} On invalid credentials, locked account, or user not found
+ */
+async function login(username, password) {
+    // Find user in ASP.NET Users
+    const aspUser = await AspnetUserModel.findByUserName(username);
+
+    if (!aspUser) {
+        throw Object.assign(new Error('User not found'), { statusCode: 401 });
     }
 
-    // Step 6: Get user roles for the JWT payload
-    const roles = await SecurityRoleModel.getUserRoles(user.UserId);
+    // Check Membership (credentials + account status)
+    const membership = await AspnetMembershipModel.findByUserId(aspUser.UserId);
 
-    // Step 8: Generate JWT tokens
-    const tokenPayload = {
-        userId: user.UserId,
-        personId: personId,
-        roles: roles,
+    if (!membership) {
+        throw Object.assign(new Error('Membership record not found'), { statusCode: 401 });
+    }
+
+    if (membership.IsLockedOut) {
+        throw Object.assign(new Error('Account is locked. Please contact support.'), { statusCode: 403 });
+    }
+
+    if (!membership.IsApproved) {
+        throw Object.assign(new Error('Account is not approved.'), { statusCode: 403 });
+    }
+
+    // Validate Password against ASP.NET Membership hash
+    const isValid = PasswordUtils.validatePassword(password, membership.PasswordSalt, membership.Password);
+
+    if (!isValid) {
+        throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
+    }
+
+    // Retrieve profile via MyNaatiUser → Entity → Person
+    const { myNaatiLink, personDetails } = await getMyNaatiProfile(aspUser.UserId);
+
+    // Construct token payload
+    const userPayload = {
+        userId: aspUser.UserId,  // GUID
+        personId: personDetails ? personDetails.PersonId : null,
+        roles: ['Applicant']
     };
 
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(user.UserId);
-
-    logger.info(`User ${username} logged in successfully`);
-
+    const tokens = generateTokens(userPayload);
     return {
-        accessToken,
-        refreshToken,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
         user: {
-            userId: user.UserId,
-            username: user.UserName,
-            fullName: user.FullName,
-            email: user.Email,
-            personId: personId,
-            givenName: personDetails?.GivenName || null,
-            surname: personDetails?.Surname || null,
-            roles: roles,
+            UserId: aspUser.UserId,
+            Email: membership.Email,
+            Role: 'Applicant',
+            PersonId: userPayload.personId,
+            NaatiNumber: myNaatiLink ? myNaatiLink.NaatiNumber : null,
+            GivenName: personDetails ? personDetails.GivenName : 'User',
         },
     };
 }
 
 /**
- * Register a new user account.
- * Creates records in the correct order respecting FK constraints:
- *   tblEntity → tblPerson → tblPersonName → tblEmail → tblUser
+ * Register a new MyNaati user.
  * 
- * @param {Object} data - Registration data
- * @param {string} data.givenName - Given/first name
- * @param {string} data.surname - Surname/last name
- * @param {string} data.email - Email address (also used as username)
- * @param {string} data.password - Plaintext password (will be hashed)
- * @param {string} [data.middleName] - Middle name
- * @param {string} [data.dateOfBirth] - Date of birth (ISO format)
- * @param {number} [data.genderId=1] - Gender ID
- * @returns {Promise<Object>} Created user info { userId, personId }
- * @throws {Error} If email/username already exists
+ * Creates the full entity chain:
+ *   aspnet_Users → aspnet_Membership → tblEntity → tblPerson → tblPersonName → tblEmail → tblMyNaatiUser
+ * 
+ * Only checks aspnet_Users for duplicates (not tblUser which is NCMS).
  */
 async function register({ givenName, surname, email, password, middleName, dateOfBirth, genderId = 1 }) {
-    // Check if username (email) is already taken
-    const existingUser = await UserModel.findByEmail(email);
-    if (existingUser) {
-        throw Object.assign(new Error('An account with this email already exists'), { statusCode: 409 });
+    try {
+        // 1. Check if user already exists in ASP.NET Users only (NOT tblUser)
+        const existingAspUser = await AspnetUserModel.findByUserName(email);
+
+        if (existingAspUser) {
+            throw Object.assign(new Error('An account with this email already exists. Please log in instead.'), { statusCode: 409 });
+        }
+
+        // 2. Generate Naati Number
+        const naatiNumber = await KeyAllocationModel.getNextNaatiNumber();
+        const naatiNumberInt = parseInt(naatiNumber);
+
+        // 3. Generate ASP.NET Identity (GUID & Salt)
+        const userId = crypto.randomUUID();
+        const salt = PasswordUtils.generateSalt();
+        const passwordHash = PasswordUtils.hashPassword(password, salt);
+
+        // 4. Create ASP.NET User & Membership
+        await AspnetUserModel.create({ userId, userName: email });
+        await AspnetMembershipModel.create({ userId, password: passwordHash, passwordSalt: salt, email });
+
+        // 5. Create Entity (with NaatiNumber)
+        const entityId = await EntityModel.create({ entityTypeId: 1, naatiNumber: naatiNumberInt });
+
+        // 6. Create Person Profile
+        const personId = await PersonModel.create({
+            entityId,
+            dateOfBirth,
+            gender: genderId
+        });
+
+        // 7. Create Person Name
+        await PersonModel.createName({
+            personId,
+            givenName,
+            surname,
+            middleName,
+            titleId: 1
+        });
+
+        // 8. Create Email Record
+        await EmailModel.create({
+            entityId,
+            email
+        });
+
+        // 9. Link ASP.NET User → NaatiNumber via tblMyNaatiUser
+        await MyNaatiUserModel.linkUser(userId, naatiNumberInt);
+
+        // Return tokens
+        const userPayload = {
+            userId: userId,
+            personId: personId,
+            roles: ['Applicant']
+        };
+        const tokens = generateTokens(userPayload);
+
+        return {
+            message: 'Registration successful',
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: {
+                UserId: userId,
+                Email: email,
+                Role: 'Applicant',
+                PersonId: personId,
+                NaatiNumber: naatiNumberInt,
+                GivenName: givenName,
+            }
+        };
+
+    } catch (error) {
+        logger.error('Registration Error:', error);
+        throw error;
     }
-
-    // Hash the password before storing
-    const passwordHash = await hashPassword(password);
-    const fullName = middleName
-        ? `${givenName} ${middleName} ${surname}`
-        : `${givenName} ${surname}`;
-
-    // Create records in FK-dependency order
-    // 1. Create entity (root record) - required for both Person and Email
-    const entityId = await EntityModel.create({ entityTypeId: 1 }); // 1 = Person type
-
-    // 2. Create person linked to entity
-    const personId = await PersonModel.create({
-        entityId,
-        dateOfBirth: dateOfBirth || null,
-        genderId,
-    });
-
-    // 3. Create person name record
-    await PersonModel.createName({
-        personId,
-        givenName,
-        surname,
-        middleName: middleName || null,
-    });
-
-    // 4. Create email record linked to entity (Establishes the link for login lookup)
-    await EmailModel.create({
-        entityId,
-        email,
-    });
-
-    // 5. Create user account
-    const userId = await UserModel.create({
-        userName: email, // Use email as username
-        fullName,
-        email,
-        password: passwordHash,
-        officeId: 1, // Default office
-    });
-
-    // Note: We skip tblMyNaatiUser creation as it requires a NaatiNumber which new users don't have.
-    // The link is established via Email -> Entity -> Person.
-
-    logger.info(`New user registered: ${email} (UserId: ${userId}, PersonId: ${personId})`);
-
-    return { userId, personId, email };
 }
 
 /**
  * Refresh an expired access token using a valid refresh token.
+ * Looks up the user in aspnet_Users (NOT tblUser).
  * 
  * @param {string} refreshToken - The refresh token
- * @returns {Promise<Object>} New access token and user info
+ * @returns {Promise<Object>} New access token
  * @throws {Error} If refresh token is invalid or user not found
  */
 async function refreshAccessToken(refreshToken) {
     // Verify the refresh token
-    const decoded = verifyRefreshToken(refreshToken);
-
-    // Look up the user
-    const user = await UserModel.findById(decoded.userId);
-    if (!user || !user.Active) {
+    let decoded;
+    try {
+        decoded = verifyRefreshToken(refreshToken);
+    } catch (err) {
         throw Object.assign(new Error('Invalid refresh token'), { statusCode: 401 });
     }
 
-    // Get roles and person ID
-    const roles = await SecurityRoleModel.getUserRoles(user.UserId);
-    const myNaatiUser = await MyNaatiUserModel.findByUserId(user.UserId);
+    // Look up user in ASP.NET Users (not tblUser)
+    const aspUser = await AspnetUserModel.findByUserId(decoded.userId);
+    if (!aspUser) {
+        throw Object.assign(new Error('User not found'), { statusCode: 401 });
+    }
+
+    // Check membership is still active
+    const membership = await AspnetMembershipModel.findByUserId(aspUser.UserId);
+    if (!membership || membership.IsLockedOut || !membership.IsApproved) {
+        throw Object.assign(new Error('Account is inactive or locked'), { statusCode: 401 });
+    }
+
+    // Get profile for token payload
+    const { personDetails } = await getMyNaatiProfile(aspUser.UserId);
 
     // Generate new access token
     const accessToken = generateAccessToken({
-        userId: user.UserId,
-        personId: myNaatiUser?.PersonId || null,
-        roles,
+        userId: aspUser.UserId,
+        personId: personDetails?.PersonId || null,
+        roles: ['Applicant'],
     });
 
     return { accessToken };
 }
 
 /**
- * Change a user's password (authenticated operation).
- * Verifies the current password before allowing the change.
+ * Change a MyNaati user's password.
+ * Uses aspnet_Membership (NOT tblUser).
  * 
- * @param {number} userId - The authenticated user's ID
+ * @param {string} userId - The ASP.NET User GUID
  * @param {string} currentPassword - Current password for verification
  * @param {string} newPassword - New password to set
- * @throws {Error} If current password is incorrect
  */
 async function changePassword(userId, currentPassword, newPassword) {
-    const user = await UserModel.findByUsername(
-        (await UserModel.findById(userId)).UserName
-    );
+    const membership = await AspnetMembershipModel.findByUserId(userId);
 
-    if (!user) {
+    if (!membership) {
         throw Object.assign(new Error('User not found'), { statusCode: 404 });
     }
 
-    // Verify current password
-    const isValid = await comparePassword(currentPassword, user.Password);
+    // Verify current password against ASP.NET Membership hash
+    const isValid = PasswordUtils.validatePassword(currentPassword, membership.PasswordSalt, membership.Password);
     if (!isValid) {
         throw Object.assign(new Error('Current password is incorrect'), { statusCode: 401 });
     }
 
     // Hash and save new password
-    const newHash = await hashPassword(newPassword);
-    await UserModel.updatePassword(userId, newHash);
+    const newSalt = PasswordUtils.generateSalt();
+    const newHash = PasswordUtils.hashPassword(newPassword, newSalt);
+    await AspnetMembershipModel.updatePassword(userId, newHash, newSalt);
 
     logger.info(`Password changed for user ${userId}`);
 }
 
 /**
  * Initiate a password reset by generating a reset token.
- * In a production system, this would send an email with the reset link.
+ * Looks up user via aspnet_Membership email (NOT tblUser).
  * 
  * @param {string} email - The user's email address
- * @returns {Promise<Object>} Reset token info (would be emailed in production)
+ * @returns {Promise<Object>} Reset token info
  */
 async function forgotPassword(email) {
-    const user = await UserModel.findByEmail(email);
+    const membership = await AspnetMembershipModel.findByEmail(email);
 
     // Always return success to prevent email enumeration attacks
-    if (!user) {
+    if (!membership) {
         logger.warn(`Password reset requested for non-existent email: ${email}`);
         return { message: 'If the email exists, a reset link has been sent.' };
     }
 
-    // Generate a time-limited reset token (reuse JWT infrastructure)
-    const resetToken = generateMfaToken(user.UserId); // Reuses 5-min token
+    // Generate a time-limited reset token
+    const { generateMfaToken } = require('../utils/jwt');
+    const resetToken = generateMfaToken(membership.UserId);
 
     // TODO: Send email with reset link containing the token
-    // In development, log the token for testing
     logger.info(`Password reset token for ${email}: ${resetToken}`);
 
     return { message: 'If the email exists, a reset link has been sent.' };
@@ -290,6 +322,7 @@ async function forgotPassword(email) {
 
 /**
  * Reset password using a valid reset token.
+ * Updates aspnet_Membership (NOT tblUser).
  * 
  * @param {string} token - The reset token from the email link
  * @param {string} newPassword - The new password to set
@@ -304,43 +337,40 @@ async function resetPassword(token, newPassword) {
         throw Object.assign(new Error('Invalid or expired reset token'), { statusCode: 400 });
     }
 
-    const newHash = await hashPassword(newPassword);
-    await UserModel.updatePassword(decoded.userId, newHash);
+    const newSalt = PasswordUtils.generateSalt();
+    const newHash = PasswordUtils.hashPassword(newPassword, newSalt);
+    await AspnetMembershipModel.updatePassword(decoded.userId, newHash, newSalt);
 
     logger.info(`Password reset completed for user ${decoded.userId}`);
 }
 
 /**
- * Get the current authenticated user's profile.
- * Returns combined data from tblUser and tblPerson.
+ * Get the current authenticated MyNaati user's profile.
+ * Uses aspnet_Users + aspnet_Membership + tblMyNaatiUser + tblPerson.
  * 
- * @param {number} userId - The authenticated user's ID
+ * @param {string} userId - The ASP.NET User GUID
  * @param {number} personId - The user's PersonId
  * @returns {Promise<Object>} User profile data
  */
 async function getCurrentUser(userId, personId) {
-    const user = await UserModel.findById(userId);
-    if (!user) {
+    const aspUser = await AspnetUserModel.findByUserId(userId);
+    if (!aspUser) {
         throw Object.assign(new Error('User not found'), { statusCode: 404 });
     }
 
-    let personDetails = null;
-    if (personId) {
-        personDetails = await PersonModel.findById(personId);
-    }
-
-    const roles = await SecurityRoleModel.getUserRoles(userId);
+    const membership = await AspnetMembershipModel.findByUserId(userId);
+    const { myNaatiLink, personDetails } = await getMyNaatiProfile(userId);
 
     return {
-        userId: user.UserId,
-        username: user.UserName,
-        fullName: user.FullName,
-        email: user.Email,
-        personId,
+        userId: aspUser.UserId,
+        username: aspUser.UserName,
+        email: membership?.Email || aspUser.UserName,
+        personId: personDetails?.PersonId || personId,
         givenName: personDetails?.GivenName || null,
         surname: personDetails?.Surname || null,
         middleName: personDetails?.MiddleName || null,
-        roles,
+        naatiNumber: myNaatiLink?.NaatiNumber || null,
+        roles: ['Applicant'],
     };
 }
 

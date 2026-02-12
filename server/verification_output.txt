@@ -1,0 +1,14 @@
+Checking for user: rajaman78167@gmail.com...
+✅ User found in tblUser:
+   - UserId: 2619
+   - FullName: Aman Raj
+   - Active: true
+✅ Email record found in tblEmail:
+   - EmailId: 466030
+   - EntityId: 471292
+✅ Person found in tblPerson:
+   - PersonId: 464892
+✅ PersonName found:
+   - GivenName: Aman
+   - Surname: Raj
+   - OtherNames: 

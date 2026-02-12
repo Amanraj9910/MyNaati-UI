@@ -16,6 +16,7 @@
  */
 
 const { query, sql } = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 /**
  * Create a new user record.
@@ -76,7 +77,7 @@ async function findByUsername(userName) {
  */
 async function findByEmail(email) {
     const result = await query(
-        `SELECT UserId, UserName, FullName, Email, Active, IsLockedOut
+        `SELECT UserId, UserName, FullName, Email, Password, OfficeId, Active, IsLockedOut
      FROM tblUser
      WHERE Email = @email AND Active = 1`,
         { email: { type: sql.NVarChar, value: email } }
@@ -99,6 +100,17 @@ async function findById(userId) {
         { userId: { type: sql.Int, value: userId } }
     );
     return result.recordset[0] || null;
+}
+
+/**
+ * Verify a password against a hash.
+ * 
+ * @param {string} storedHash - The bcrypt hash from the database
+ * @param {string} password - The password to check
+ * @returns {Promise<boolean>} True if match
+ */
+async function verifyPassword(storedHash, password) {
+    return await bcrypt.compare(password, storedHash);
 }
 
 /**
@@ -247,6 +259,7 @@ module.exports = {
     findByUsername,
     findByEmail,
     findById,
+    verifyPassword,
     updatePassword,
     incrementFailedAttempts,
     resetFailedAttempts,

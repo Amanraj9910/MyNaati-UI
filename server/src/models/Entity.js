@@ -21,13 +21,14 @@ const { query, sql } = require('../config/database');
  * @param {number} data.entityTypeId - Type of entity (e.g., 1=Person, 2=Institution)
  * @returns {Promise<number>} The newly created EntityId
  */
-async function create({ entityTypeId }) {
+async function create({ entityTypeId, naatiNumber = null }) {
     const result = await query(
-        `INSERT INTO tblEntity (EntityTypeId, WebsiteURL, ABN, Note, UseEmail, WebsiteInPD, GSTApplies)
+        `INSERT INTO tblEntity (EntityTypeId, WebsiteURL, ABN, Note, UseEmail, WebsiteInPD, GSTApplies, NAATINumber)
      OUTPUT INSERTED.EntityId
-     VALUES (@entityTypeId, '', '', '', 0, 0, 0)`,
+     VALUES (@entityTypeId, '', '', '', 0, 0, 0, @naatiNumber)`,
         {
             entityTypeId: { type: sql.Int, value: entityTypeId },
+            naatiNumber: { type: sql.Int, value: naatiNumber }
         }
     );
     return result.recordset[0].EntityId;

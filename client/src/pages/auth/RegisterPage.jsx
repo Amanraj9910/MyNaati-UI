@@ -100,6 +100,43 @@ function RegisterPage() {
                         </div>
                     </div>
 
+                    {/* DoB and Gender fields */}
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="dateOfBirth">Date of Birth *</label>
+                            <input
+                                id="dateOfBirth"
+                                type="date"
+                                className={errors.dateOfBirth ? 'input-error' : ''}
+                                {...register('dateOfBirth', {
+                                    required: 'Date of birth is required'
+                                })}
+                            />
+                            {errors.dateOfBirth && (
+                                <span className="field-error"><AlertCircle size={14} /> {errors.dateOfBirth.message}</span>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="genderId">Gender *</label>
+                            <select
+                                id="genderId"
+                                className={errors.genderId ? 'input-error' : ''}
+                                {...register('genderId', {
+                                    required: 'Gender is required'
+                                })}
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                                <option value="O">Other</option>
+                            </select>
+                            {errors.genderId && (
+                                <span className="field-error"><AlertCircle size={14} /> {errors.genderId.message}</span>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Email field */}
                     <div className="form-group">
                         <label htmlFor="email">Email Address *</label>

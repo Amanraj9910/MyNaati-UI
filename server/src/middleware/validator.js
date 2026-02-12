@@ -84,7 +84,10 @@ const registerValidation = [
         .isISO8601().withMessage('Invalid date format (use YYYY-MM-DD)'),
     body('genderId')
         .optional()
-        .isInt({ min: 1 }).withMessage('Invalid gender selection'),
+        .custom((value) => {
+            if (['M', 'F', 'O'].includes(value)) return true;
+            throw new Error('Invalid gender selection');
+        }),
 ];
 
 /**
