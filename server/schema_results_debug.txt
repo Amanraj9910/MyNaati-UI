@@ -1,0 +1,4 @@
+tblProfessionalDevelopmentActivity: ProfessionalDevelopmentActivityId, ProfessionalDevelopmentCategoryId, ProfessionalDevelopmentRequirementId, Notes, Description, DateCompleted, PersonId
+tblOrder: OrderID, NAATINumber, OrderDate, DeliveryName, DeliveryAddress, SuburbId, CountryId, ExternalPaymentTransactionId
+tblOrderItem: OrderItemID, Product, Skill, Level, Direction, Expiry, Quantity, Price, GSTApplies, OrderItemType, ProductSpecificationId, AccreditationResultId, OrderID
+tblCredential: CredentialId, StartDate, ExpiryDate, TerminationDate, ShowInOnlineDirectory, CertificationPeriodId

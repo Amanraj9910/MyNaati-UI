@@ -1226,7 +1226,7 @@ a:hover {
    ========================================================================== */
 
 .dash-banner {
-  background: linear-gradient(135deg, var(--color-card), #1e293b);
+  background: linear-gradient(135deg, var(--color-card), #79bcd1);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   padding: 2.5rem;
@@ -1269,8 +1269,8 @@ a:hover {
 
 .dash-naati-badge {
   display: inline-block;
-  background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  background: rgb(99 193 182 / 24%);
+  color: #4383c5;
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -1288,7 +1288,7 @@ a:hover {
 .dash-avatar {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #38c3b4, #019383);
   border-radius: 24px;
   display: flex;
   align-items: center;
