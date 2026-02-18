@@ -34,86 +34,102 @@ export default function AddLogbookEntryModal({ isOpen, onClose, onAdd }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <BookOpen size={20} style={{ color: '#009382' }} />
+        <div className="modal-overlay">
+            <div className="modal-container">
+                {/* Header */}
+                <div className="modal-header">
+                    <h3 className="modal-title">
+                        <div className="modal-icon-wrapper">
+                            <BookOpen size={20} />
+                        </div>
                         Log New Activity
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button
+                        onClick={onClose}
+                        className="modal-close-btn"
+                    >
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Activity Date</label>
-                        <input
-                            type="date"
-                            {...register('ActivityDate', { required: 'Required' })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                            style={{ '--tw-ring-color': '#009382' }}
-                        />
-                        {errors.ActivityDate && <span className="text-xs text-red-500">{errors.ActivityDate.message}</span>}
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="modal-body">
+                        {/* Date & Category Row */}
+                        <div className="grid-2">
+                            <div className="form-group">
+                                <label htmlFor="ActivityDate">Date</label>
+                                <input
+                                    id="ActivityDate"
+                                    type="date"
+                                    {...register('ActivityDate', { required: 'Required' })}
+                                    className={errors.ActivityDate ? 'input-error' : ''}
+                                />
+                                {errors.ActivityDate && <span className="field-error">{errors.ActivityDate.message}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="CategoryId">Category</label>
+                                <div className="relative">
+                                    <select
+                                        id="CategoryId"
+                                        {...register('CategoryId', { required: 'Required' })}
+                                        className={errors.CategoryId ? 'input-error' : ''}
+                                    >
+                                        <option value="">Select...</option>
+                                        {categories.map(c => (
+                                            <option key={c.ProfessionalDevelopmentCategoryId} value={c.ProfessionalDevelopmentCategoryId}>
+                                                {c.Name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {errors.CategoryId && <span className="field-error">{errors.CategoryId.message}</span>}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="form-group">
+                            <label htmlFor="Description">Description</label>
+                            <textarea
+                                id="Description"
+                                {...register('Description', { required: 'Required' })}
+                                rows={3}
+                                placeholder="Describe the activity..."
+                                className={errors.Description ? 'input-error' : ''}
+                                style={{ resize: 'none' }}
+                            />
+                            {errors.Description && <span className="field-error">{errors.Description.message}</span>}
+                        </div>
+
+                        {/* Hours/Points */}
+                        <div className="form-group">
+                            <label htmlFor="Hours">Hours / Points</label>
+                            <input
+                                id="Hours"
+                                type="number"
+                                step="0.5"
+                                {...register('Hours', { required: 'Required', min: 0 })}
+                                placeholder="0.0"
+                                className={errors.Hours ? 'input-error' : ''}
+                            />
+                            {errors.Hours && <span className="field-error">{errors.Hours.message}</span>}
+                        </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Category</label>
-                        <select
-                            {...register('CategoryId', { required: 'Required' })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all bg-white"
-                            style={{ '--tw-ring-color': '#009382' }}
-                        >
-                            <option value="">Select Category...</option>
-                            {categories.map(c => (
-                                <option key={c.ProfessionalDevelopmentCategoryId} value={c.ProfessionalDevelopmentCategoryId}>
-                                    {c.Name}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.CategoryId && <span className="text-xs text-red-500">{errors.CategoryId.message}</span>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Description</label>
-                        <textarea
-                            {...register('Description', { required: 'Required' })}
-                            rows={3}
-                            placeholder="Details of the activity..."
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all resize-none"
-                            style={{ '--tw-ring-color': '#009382' }}
-                        />
-                        {errors.Description && <span className="text-xs text-red-500">{errors.Description.message}</span>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Hours / Points</label>
-                        <input
-                            type="number"
-                            step="0.5"
-                            {...register('Hours', { required: 'Required', min: 0 })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                            style={{ '--tw-ring-color': '#009382' }}
-                        />
-                        {errors.Hours && <span className="text-xs text-red-500">{errors.Hours.message}</span>}
-                    </div>
-
-                    <div className="pt-2 flex justify-end gap-2">
+                    {/* Actions */}
+                    <div className="modal-footer">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="btn btn-secondary"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-                            style={{ background: '#009382' }}
+                            className="btn btn-primary"
                         >
-                            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                             Save Entry
                         </button>
                     </div>

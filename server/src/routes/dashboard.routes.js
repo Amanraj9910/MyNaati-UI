@@ -90,6 +90,7 @@ router.post('/applications', async (req, res, next) => {
 router.get('/profile', async (req, res, next) => {
     try {
         const data = await dashboardService.getProfile(req.user.userId);
+        res.json({ success: true, data });
     } catch (error) { next(error); }
 });
 

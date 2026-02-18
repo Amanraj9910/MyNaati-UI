@@ -36,7 +36,7 @@ export default function ApplicationsPage() {
                     <FileText size={28} className="detail-page-icon" style={{ color: '#009382' }} />
                     <h1>Apply for Certification</h1>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary ml-auto flex items-center gap-2">
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Plus size={18} /> New Application
                 </button>
             </div>

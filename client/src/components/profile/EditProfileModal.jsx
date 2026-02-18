@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { X, Save, Loader2 } from 'lucide-react';
+import { X, Save, Loader2, User } from 'lucide-react';
 import { updateProfile } from '../../services/dashboard.service';
 import toast from 'react-hot-toast';
 
@@ -38,87 +38,111 @@ export default function EditProfileModal({ isOpen, onClose, user, onUpdate }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Edit Personal Details</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="modal-overlay">
+            <div className="modal-container">
+                {/* Header */}
+                <div className="modal-header">
+                    <h3 className="modal-title">
+                        <div className="modal-icon-wrapper">
+                            <User size={20} />
+                        </div>
+                        Edit Personal Details
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="modal-close-btn"
+                    >
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Given Name</label>
-                            <input
-                                {...register('GivenName', { required: 'Required' })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                                style={{ '--tw-ring-color': '#009382' }}
-                            />
-                            {errors.GivenName && <span className="text-xs text-red-500">{errors.GivenName.message}</span>}
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="modal-body">
+                        {/* Names Container */}
+                        <div>
+                            <h4 className="modal-section-title">Identity</h4>
+
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label htmlFor="GivenName">Given Name</label>
+                                    <input
+                                        id="GivenName"
+                                        {...register('GivenName', { required: 'Required' })}
+                                        placeholder="First Name"
+                                        className={errors.GivenName ? 'input-error' : ''}
+                                    />
+                                    {errors.GivenName && <span className="field-error">{errors.GivenName.message}</span>}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="MiddleName">Middle Name</label>
+                                    <input
+                                        id="MiddleName"
+                                        {...register('MiddleName')}
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group mt-2">
+                                <label htmlFor="Surname">Surname</label>
+                                <input
+                                    id="Surname"
+                                    {...register('Surname', { required: 'Required' })}
+                                    placeholder="Last Name"
+                                    className={errors.Surname ? 'input-error' : ''}
+                                />
+                                {errors.Surname && <span className="field-error">{errors.Surname.message}</span>}
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Middle Name</label>
-                            <input
-                                {...register('MiddleName')}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                                style={{ '--tw-ring-color': '#009382' }}
-                            />
+
+                        {/* Demographics Container */}
+                        <div>
+                            <h4 className="modal-section-title">Demographics</h4>
+
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label htmlFor="dateOfBirth">Date of Birth</label>
+                                    <input
+                                        id="dateOfBirth"
+                                        type="date"
+                                        {...register('dateOfBirth', { required: 'Required' })}
+                                        className={errors.dateOfBirth ? 'input-error' : ''}
+                                    />
+                                    {errors.dateOfBirth && <span className="field-error">{errors.dateOfBirth.message}</span>}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="gender">Gender</label>
+                                    <div className="relative">
+                                        <select
+                                            id="gender"
+                                            {...register('gender')}
+                                        >
+                                            <option value="">Select...</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                            <option value="X">Non-binary / Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Surname</label>
-                        <input
-                            {...register('Surname', { required: 'Required' })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                            style={{ '--tw-ring-color': '#009382' }}
-                        />
-                        {errors.Surname && <span className="text-xs text-red-500">{errors.Surname.message}</span>}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Date of Birth</label>
-                            <input
-                                type="date"
-                                {...register('dateOfBirth', { required: 'Required' })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all"
-                                style={{ '--tw-ring-color': '#009382' }}
-                            />
-                            {errors.dateOfBirth && <span className="text-xs text-red-500">{errors.dateOfBirth.message}</span>}
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Gender</label>
-                            <select
-                                {...register('gender')}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 outline-none transition-all bg-white"
-                                style={{ '--tw-ring-color': '#009382' }}
-                            >
-                                <option value="">Select...</option>
-                                <option value="M">Male</option>
-                                <option value="F">Female</option>
-                                <option value="X">Non-binary / Other</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="pt-2 flex justify-end gap-2">
+                    {/* Actions */}
+                    <div className="modal-footer">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="btn btn-secondary"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-                            style={{ background: '#009382' }}
+                            className="btn btn-primary"
                         >
-                            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                             Save Changes
                         </button>
                     </div>

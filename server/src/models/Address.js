@@ -27,8 +27,8 @@ async function findByEntityId(entityId) {
 
 async function create(entityId, data) {
     const result = await query(
-        `INSERT INTO tblAddress (EntityId, StreetDetails, PostcodeId, CountryId, PrimaryContact, Invalid, Note, StartDate)
-         VALUES (@entityId, @streetDetails, @postcodeId, @countryId, @isPrimary, 0, @note, GETDATE());
+        `INSERT INTO tblAddress (EntityId, StreetDetails, PostcodeId, CountryId, PrimaryContact, Invalid, Note, StartDate, ODAddressVisibilityTypeId)
+         VALUES (@entityId, @streetDetails, @postcodeId, @countryId, @isPrimary, 0, @note, GETDATE(), 1);
          SELECT SCOPE_IDENTITY() AS AddressId;`,
         {
             entityId: { type: sql.Int, value: entityId },

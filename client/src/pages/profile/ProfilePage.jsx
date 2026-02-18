@@ -44,7 +44,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <div className="page-container">
-                <div className="dashboard-loading"><Loader2 className="spin" size={32} /><p>Loading profile...</p></div>
+                <div className="dashboard-loading"><Loader2 className="spinner-icon" size={32} /><p>Loading profile...</p></div>
             </div>
         );
     }
@@ -163,7 +163,7 @@ export default function ProfilePage() {
                         <div className="profile-list">
                             {addresses.map((a) => (
                                 <div key={a.AddressId} className="profile-list-item">
-                                    <div className="address-content">
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span className="profile-list-value">
                                             {a.StreetDetails || [a.AddressLine1, a.AddressLine2].filter(Boolean).join(', ') || 'No street details'}
                                         </span>
@@ -172,9 +172,9 @@ export default function ProfilePage() {
                                             {a.ContactPerson ? ` • Contact: ${a.ContactPerson}` : ''}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         {a.IsPrimary && <span className="status-badge status-active">Primary</span>}
-                                        <button onClick={() => handleEditAddress(a)} className="text-gray-400 hover:text-teal-600">
+                                        <button onClick={() => handleEditAddress(a)} className="btn-icon" style={{ border: 'none' }}>
                                             <Edit2 size={16} />
                                         </button>
                                     </div>

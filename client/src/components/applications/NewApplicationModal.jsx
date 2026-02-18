@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 export default function NewApplicationModal({ isOpen, onClose }) {
     const [selectedType, setSelectedType] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const navigate = useNavigate();
 
     const applicationTypes = [
         { id: 1, title: 'Certified Translator', icon: Globe, description: 'Translate written documents.' },
@@ -22,6 +21,7 @@ export default function NewApplicationModal({ isOpen, onClose }) {
             await createApplication(selectedType);
             toast.success('Application started successfully');
             onClose();
+            // In a real app we might redirect to the new application or refresh the list
             window.location.reload();
         } catch (error) {
             console.error(error);
@@ -34,19 +34,20 @@ export default function NewApplicationModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Start New Application</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="modal-overlay">
+            <div className="modal-container">
+                {/* Header */}
+                <div className="modal-header">
+                    <h3 className="modal-title">Start New Application</h3>
+                    <button onClick={onClose} className="modal-close-btn">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-4 space-y-4">
-                    <p className="text-sm text-gray-500">Select the type of credential you wish to apply for:</p>
+                <div className="modal-body">
+                    <p className="text-sm text-muted">Select the type of credential you wish to apply for:</p>
 
-                    <div className="grid gap-3">
+                    <div className="application-type-grid">
                         {applicationTypes.map((type) => {
                             const Icon = type.icon;
                             const isSelected = selectedType === type.id;
@@ -54,47 +55,115 @@ export default function NewApplicationModal({ isOpen, onClose }) {
                                 <button
                                     key={type.id}
                                     onClick={() => setSelectedType(type.id)}
-                                    className={`flex items-start gap-4 p-4 rounded-lg border-2 text-left transition-all ${isSelected
-                                        ? 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                                        : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                                        }`}
-                                    style={isSelected ? { borderColor: '#009382', background: 'rgba(0, 147, 130, 0.05)' } : {}}
+                                    className={`app-type-card ${isSelected ? 'selected' : ''}`}
                                 >
-                                    <div className="p-2 rounded-lg"
-                                        style={isSelected
-                                            ? { background: 'rgba(0, 147, 130, 0.1)', color: '#009382' }
-                                            : { background: '#f3f4f6', color: '#6b7280' }
-                                        }>
+                                    <div className={`app-type-icon ${isSelected ? 'selected' : ''}`}>
                                         <Icon size={24} />
                                     </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold" style={isSelected ? { color: '#005f54' } : { color: '#111827' }}>{type.title}</h4>
-                                        <p className="text-sm text-gray-500">{type.description}</p>
+                                    <div className="app-type-content">
+                                        <h4>{type.title}</h4>
+                                        <p>{type.description}</p>
                                     </div>
-                                    {isSelected && <div style={{ color: '#009382' }}><ArrowRight size={20} /></div>}
+                                    <div className={`app-type-check ${isSelected ? 'visible' : ''}`}>
+                                        <ArrowRight size={20} />
+                                    </div>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
+                <div className="modal-footer">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="btn btn-secondary"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={!selectedType || isSubmitting}
-                        className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ background: '#009382' }}
+                        className="btn btn-primary"
                     >
-                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Start Application'}
+                        {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Start Application'}
                     </button>
                 </div>
             </div>
+            <style jsx>{`
+                .application-type-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+                .app-type-card {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 1rem;
+                    padding: 1rem;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--border-radius);
+                    background: #fff;
+                    cursor: pointer;
+                    transition: all var(--transition-fast);
+                    text-align: left;
+                    width: 100%;
+                }
+                .app-type-card:hover {
+                    background-color: #f9fafb;
+                    border-color: rgba(0, 147, 130, 0.5);
+                }
+                .app-type-card.selected {
+                    background-color: rgba(0, 147, 130, 0.05);
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 1px var(--color-primary);
+                }
+                .app-type-icon {
+                    padding: 0.625rem;
+                    background: #f1f5f9;
+                    border-radius: 0.5rem;
+                    color: var(--color-text-muted);
+                    transition: all var(--transition-fast);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .app-type-card:hover .app-type-icon {
+                    background: #fff;
+                    color: var(--color-primary);
+                    box-shadow: var(--shadow-sm);
+                }
+                .app-type-icon.selected {
+                    background: #fff;
+                    color: var(--color-primary);
+                    box-shadow: var(--shadow-sm);
+                }
+                .app-type-content {
+                    flex: 1;
+                }
+                .app-type-content h4 {
+                    font-weight: 700;
+                    color: var(--color-text-heading);
+                    font-size: 1rem;
+                    margin-bottom: 0.125rem;
+                }
+                .app-type-card.selected .app-type-content h4 {
+                    color: var(--color-primary);
+                }
+                .app-type-content p {
+                    font-size: 0.875rem;
+                    color: var(--color-text-muted);
+                }
+                .app-type-check {
+                    color: var(--color-primary);
+                    opacity: 0;
+                    transform: translateX(-0.5rem);
+                    transition: all var(--transition-fast);
+                }
+                .app-type-check.visible {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            `}</style>
         </div>
     );
 }
