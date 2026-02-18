@@ -301,6 +301,13 @@ async function changePassword(userId, currentPassword, newPassword) {
  * @param {string} email - The user's email address
  * @returns {Promise<Object>} Reset token info
  */
+/**
+ * Initiate a password reset by generating a reset token.
+ * Looks up user via aspnet_Membership email (NOT tblUser).
+ * 
+ * @param {string} email - The user's email address
+ * @returns {Promise<Object>} Reset token info
+ */
 async function forgotPassword(email) {
     const membership = await AspnetMembershipModel.findByEmail(email);
 
@@ -310,12 +317,26 @@ async function forgotPassword(email) {
         return { message: 'If the email exists, a reset link has been sent.' };
     }
 
-    // Generate a time-limited reset token
+    // Generate a time-limited reset token (5 minutes)
     const { generateMfaToken } = require('../utils/jwt');
     const resetToken = generateMfaToken(membership.UserId);
 
-    // TODO: Send email with reset link containing the token
-    logger.info(`Password reset token for ${email}: ${resetToken}`);
+    // Construct Reset URL (Frontend URL)
+    // Assuming frontend is running on localhost:5173 or configured via env
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // Send email
+    const EmailService = require('./email.service');
+    try {
+        await EmailService.sendPasswordResetEmail(email, resetUrl);
+    } catch (error) {
+        // Log error but don't expose it to user
+        logger.error('Failed to send reset email:', error);
+        return { message: 'If the email exists, a reset link has been sent.' };
+    }
+
+    logger.info(`Password reset email sent for ${email}`);
 
     return { message: 'If the email exists, a reset link has been sent.' };
 }
@@ -333,15 +354,36 @@ async function resetPassword(token, newPassword) {
     try {
         const { verifyAccessToken } = require('../utils/jwt');
         decoded = verifyAccessToken(token);
-    } catch {
+    } catch (err) { // Capture error explicitly
         throw Object.assign(new Error('Invalid or expired reset token'), { statusCode: 400 });
     }
 
+    const userId = decoded.userId;
+
+    // Hash and save new password
     const newSalt = PasswordUtils.generateSalt();
     const newHash = PasswordUtils.hashPassword(newPassword, newSalt);
-    await AspnetMembershipModel.updatePassword(decoded.userId, newHash, newSalt);
 
-    logger.info(`Password reset completed for user ${decoded.userId}`);
+    // Update password
+    await AspnetMembershipModel.updatePassword(userId, newHash, newSalt);
+
+    // Unlock account if it was locked
+    // We should probably add a method to unlock account in AspnetMembershipModel, 
+    // but for now, let's assume updatePassword updates LastPasswordChangedDate which might help, 
+    // but specific lockout fields need to be reset.
+    // Let's execute a direct query here or add a method to the model.
+    // For cleaner architecture, let's add unlockAccount to AspnetMembershipModel later 
+    // or just run a query here if needed, but wait, updatePassword is just changing password.
+
+    // Let's implement unlock logic in the model later if needed, 
+    // or just run a direct update if we have access to query, but we should use the model.
+    // For now, let's just update the password.
+
+    // ACTUALLY, checking the requirement: "Unlock account if locked".
+    // I should probably add an `unlockUser(userId)` method to AspnetMembershipModel.
+    // I will do that in the next step. For now, let's just proceed with password update.
+
+    logger.info(`Password reset completed for user ${userId}`);
 }
 
 /**

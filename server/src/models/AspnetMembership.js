@@ -74,9 +74,27 @@ async function updatePassword(userId, newPasswordHash, newSalt) {
     );
 }
 
+/**
+ * Unlock a user account by resetting failed attempt counts and lockout flags.
+ * 
+ * @param {string} userId - The ASP.NET User GUID
+ */
+async function unlockUser(userId) {
+    await query(
+        `UPDATE aspnet_Membership 
+         SET IsLockedOut = 0,
+             FailedPasswordAttemptCount = 0,
+             FailedPasswordAnswerAttemptCount = 0,
+             LastLockoutDate = '1754-01-01'
+         WHERE UserId = @userId`,
+        { userId: { type: sql.UniqueIdentifier, value: userId } }
+    );
+}
+
 module.exports = {
     create,
     findByUserId,
     findByEmail,
-    updatePassword
+    updatePassword,
+    unlockUser
 };

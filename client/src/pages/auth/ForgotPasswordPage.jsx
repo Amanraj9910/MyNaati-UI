@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Mail, AlertCircle, ArrowLeft } from 'lucide-react';
-import * as authService from '../../services/auth.service';
+import { forgotPassword } from '../../services/auth.service';
 import toast from 'react-hot-toast';
 
 function ForgotPasswordPage() {
@@ -22,7 +22,7 @@ function ForgotPasswordPage() {
     const onSubmit = async (formData) => {
         setIsSubmitting(true);
         try {
-            await authService.forgotPassword(formData.email);
+            await forgotPassword(formData.email);
             setSubmitted(true);
             toast.success('If the email exists, a reset link has been sent.');
         } catch (error) {
@@ -46,9 +46,9 @@ function ForgotPasswordPage() {
                 {submitted ? (
                     /* Success state — show confirmation */
                     <div className="auth-success">
-                        <p>If an account exists with that email, we've sent a password reset link. Please check your inbox.</p>
+                        <p>If an account exists with that email, we've sent a password reset link to it. Please check your inbox.</p>
                         <Link to="/login" className="btn btn-primary btn-full">
-                            <ArrowLeft size={16} /> Back to Login
+                            <ArrowLeft size={16} /> Return to Login
                         </Link>
                     </div>
                 ) : (
@@ -74,14 +74,22 @@ function ForgotPasswordPage() {
                             )}
                         </div>
                         <button type="submit" className="btn btn-primary btn-full" disabled={isSubmitting}>
-                            {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                            {isSubmitting ? 'Sending Link...' : 'Send Reset Link'}
                         </button>
                     </form>
                 )}
 
-                <div className="auth-footer">
-                    <p><Link to="/login" className="auth-link"><ArrowLeft size={14} /> Back to Login</Link></p>
-                </div>
+                {!submitted && (
+                    <div className="auth-footer">
+                        <p>
+                            <Link to="/login" className="auth-link">
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <ArrowLeft size={14} /> Back to Login
+                                </span>
+                            </Link>
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );
