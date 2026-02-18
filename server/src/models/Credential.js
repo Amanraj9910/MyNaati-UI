@@ -1,34 +1,35 @@
 /**
  * Credential Model — tblCredential
- * Queries credentials linked to an entity (via EntityId).
+ * Schema: CredentialId, StartDate, ExpiryDate, TerminationDate, ShowInOnlineDirectory, CertificationPeriodId
+ * Note: tblCredential has NO CredentialTypeId, CredentialStatusTypeId, or EntityId.
+ * Link to person is via: tblCredential.CertificationPeriodId -> tblCertificationPeriod.PersonId
  */
 const { query, sql } = require('../config/database');
 
-async function findByEntityId(entityId) {
+async function findByPersonId(personId) {
     const result = await query(
-        `SELECT c.CredentialId, c.EntityId, c.CredentialTypeId,
-                c.StartDate AS EffectiveFrom, c.ExpiryDate AS EffectiveTo,
-                ct.Name AS CredentialTypeName, ct.Description AS CredentialTypeDescription,
-                cst.Name AS Status
+        `SELECT c.CredentialId, c.StartDate AS EffectiveFrom, c.ExpiryDate AS EffectiveTo,
+                c.TerminationDate, c.ShowInOnlineDirectory, c.CertificationPeriodId
          FROM tblCredential c
-         INNER JOIN tblCredentialType ct ON c.CredentialTypeId = ct.CredentialTypeId
-         INNER JOIN tblCredentialStatusType cst ON c.CredentialStatusTypeId = cst.CredentialStatusTypeId
-         WHERE c.EntityId = @entityId
+         INNER JOIN tblCertificationPeriod cp ON c.CertificationPeriodId = cp.CertificationPeriodId
+         WHERE cp.PersonId = @personId
          ORDER BY c.ExpiryDate DESC`,
-        { entityId: { type: sql.Int, value: entityId } }
+        { personId: { type: sql.Int, value: personId } }
     );
     return result.recordset;
 }
 
-async function countActive(entityId) {
+async function countActive(personId) {
     const result = await query(
-        `SELECT COUNT(*) AS count FROM tblCredential
-         WHERE EntityId = @entityId 
-         AND ExpiryDate >= GETDATE()
-         AND CredentialStatusTypeId IN (SELECT CredentialStatusTypeId FROM tblCredentialStatusType WHERE Name = 'Active')`,
-        { entityId: { type: sql.Int, value: entityId } }
+        `SELECT COUNT(c.CredentialId) AS count 
+         FROM tblCredential c
+         INNER JOIN tblCertificationPeriod cp ON c.CertificationPeriodId = cp.CertificationPeriodId
+         WHERE cp.PersonId = @personId
+         AND c.ExpiryDate >= GETDATE()
+         AND c.TerminationDate IS NULL`,
+        { personId: { type: sql.Int, value: personId } }
     );
     return result.recordset[0].count;
 }
 
-module.exports = { findByEntityId, countActive };
+module.exports = { findByPersonId, countActive };

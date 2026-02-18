@@ -18,6 +18,8 @@ const ApplicationModel = require('../models/Application');
 const PDModel = require('../models/ProfessionalDevelopment');
 const AddressModel = require('../models/Address');
 const EmailModel = require('../models/Email');
+const PhoneModel = require('../models/Phone');
+const EntityModel = require('../models/Entity');
 const logger = require('../utils/logger');
 
 /**
@@ -76,14 +78,14 @@ async function getDashboardSummary(userId) {
 
     // Fetch all counts in parallel (gracefully handle missing tables)
     const [credentials, tests, invoices, applications, logbook] = await Promise.all([
-        entityId ? safeQuery(() => CredentialModel.countActive(entityId)) : 0,
+        personId ? safeQuery(() => CredentialModel.countActive(personId)) : 0,
         personId ? safeQuery(() => TestSittingModel.countUpcoming(personId)) : 0,
-        entityId ? safeQuery(() => InvoiceModel.countUnpaid(entityId)) : 0,
-        entityId ? safeQuery(() => ApplicationModel.countActive(entityId)) : 0,
+        naatiNumber ? safeQuery(() => InvoiceModel.countUnpaid(naatiNumber)) : 0,
+        personId ? safeQuery(() => ApplicationModel.countActive(personId)) : 0,
         personId ? safeQuery(() => PDModel.countByPersonId(personId)) : { count: 0, totalHours: 0 },
     ]);
 
-    const totalOwed = entityId ? await safeQuery(() => InvoiceModel.getTotalOwed(entityId)) : 0;
+    const totalOwed = naatiNumber ? await safeQuery(() => InvoiceModel.getTotalOwed(naatiNumber)) : 0;
 
     return {
         greeting,
@@ -115,9 +117,9 @@ async function getDashboardSummary(userId) {
  * Get user's credentials list.
  */
 async function getCredentials(userId) {
-    const { entityId } = await resolveUserChain(userId);
-    if (!entityId) return [];
-    return safeQuery(() => CredentialModel.findByEntityId(entityId), []);
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) return [];
+    return safeQuery(() => CredentialModel.findByPersonId(personId), []);
 }
 
 /**
@@ -133,18 +135,18 @@ async function getTests(userId) {
  * Get user's invoices.
  */
 async function getInvoices(userId) {
-    const { entityId } = await resolveUserChain(userId);
-    if (!entityId) return [];
-    return safeQuery(() => InvoiceModel.findByEntityId(entityId), []);
+    const { naatiNumber } = await resolveUserChain(userId);
+    if (!naatiNumber) return [];
+    return safeQuery(() => InvoiceModel.findByNaatiNumber(naatiNumber), []);
 }
 
 /**
  * Get user's credential applications.
  */
 async function getApplications(userId) {
-    const { entityId } = await resolveUserChain(userId);
-    if (!entityId) return [];
-    return safeQuery(() => ApplicationModel.findByEntityId(entityId), []);
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) return [];
+    return safeQuery(() => ApplicationModel.findByPersonId(personId), []);
 }
 
 /**
@@ -166,6 +168,8 @@ async function getProfile(userId) {
     let name = null;
     let addresses = [];
     let emails = [];
+    let phones = [];
+    let entityDetails = null;
 
     if (personId) {
         name = await PersonModel.getLatestName(personId);
@@ -173,6 +177,8 @@ async function getProfile(userId) {
     if (entityId) {
         addresses = await safeQuery(() => AddressModel.findByEntityId(entityId), []);
         emails = await safeQuery(() => EmailModel.findByEntityId(entityId), []);
+        phones = await safeQuery(() => PhoneModel.findByEntityId(entityId), []);
+        entityDetails = await safeQuery(() => EntityModel.findById(entityId), null);
     }
 
     return {
@@ -181,7 +187,93 @@ async function getProfile(userId) {
         name,
         addresses,
         emails,
+        phones,
+        website: entityDetails?.WebsiteURL || null,
     };
+}
+
+/**
+ * Update user's profile or address.
+ */
+async function updateProfile(userId, updateData) {
+    const chain = await resolveUserChain(userId);
+    const { entityId, personId } = chain;
+
+    if (!personId || !entityId) {
+        throw new Error('User profile not fully initialized');
+    }
+
+    // 1. Update Person Details
+    if (updateData.type === 'personal') {
+        await PersonModel.update(personId, updateData.data);
+    }
+    // 2. Update Address
+    else if (updateData.type === 'address') {
+        const { addressId, ...addressData } = updateData.data;
+
+        // Ensure only one primary address
+        if (addressData.IsPrimary) {
+            await query(
+                'UPDATE tblAddress SET PrimaryContact = 0 WHERE EntityId = @entityId',
+                { entityId: { type: sql.Int, value: entityId } }
+            );
+        }
+
+        if (addressId) {
+            // Verify ownership
+            const existing = await AddressModel.findById(addressId);
+            if (!existing || existing.EntityId !== entityId) {
+                throw new Error('Address not found or access denied');
+            }
+            await AddressModel.update(addressId, addressData);
+        } else {
+            await AddressModel.create(entityId, addressData);
+        }
+    }
+    // 3. Update Email
+    else if (updateData.type === 'email') {
+        const { email } = updateData.data;
+        // Check if exists? For now just create new one as per "Add/Edit" modal implication
+        // User analysis says "Edit Email: Modal form to add/edit".
+        // If we are adding:
+        await EmailModel.create({ entityId, email });
+    }
+    // 4. Update Phone
+    else if (updateData.type === 'phone') {
+        await PhoneModel.create(entityId, updateData.data);
+    }
+    // 5. Update Website (Entity)
+    else if (updateData.type === 'website') {
+        await EntityModel.update(entityId, updateData.data);
+    }
+
+    return getProfile(userId);
+}
+
+/**
+ * Add a new logbook entry (PD Activity).
+ */
+async function addLogbookEntry(userId, entryData) {
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) throw new Error('User has no linked person record');
+
+    await PDModel.create(personId, entryData);
+    return PDModel.findByPersonId(personId);
+}
+
+async function getPDCategories() {
+    return PDModel.getCategories();
+}
+
+/**
+ * Start a new credential application.
+ */
+async function createApplication(userId, typeId) {
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) throw new Error('User has no linked person record');
+
+    await ApplicationModel.create(personId, typeId);
+    return ApplicationModel.findByPersonId(personId);
 }
 
 /**
@@ -204,4 +296,8 @@ module.exports = {
     getApplications,
     getLogbook,
     getProfile,
+    updateProfile,
+    addLogbookEntry,
+    getPDCategories,
+    createApplication,
 };

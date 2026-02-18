@@ -133,10 +133,53 @@ async function getLatestName(personId) {
     return result.recordset[0] || null;
 }
 
+async function update(personId, data) {
+    // Only allow updating specific fields
+    const allowedFields = ['Gender', 'BirthDate']; // Corrected field names for tblPerson
+    const updates = {};
+
+    // Build update object
+    for (const field of allowedFields) {
+        // Map data keys to database column names if necessary
+        let dataKey = field;
+        if (field === 'Gender') dataKey = 'gender';
+        if (field === 'BirthDate') dataKey = 'dateOfBirth';
+
+        if (data[dataKey] !== undefined) {
+            updates[field] = data[dataKey];
+        }
+    }
+
+    if (Object.keys(updates).length === 0) return { rowsAffected: 0 };
+
+    // Construct SQL dynamically
+    const setClause = Object.keys(updates).map(key => `${key} = @${key}`).join(', ');
+
+    const params = {
+        personId: { type: sql.Int, value: personId }
+    };
+
+    // Add params
+    for (const [key, value] of Object.entries(updates)) {
+        params[key] = {
+            type: key === 'BirthDate' ? sql.DateTime : (key === 'Gender' ? sql.NChar : sql.NVarChar),
+            value: value
+        };
+    }
+
+    const result = await query(
+        `UPDATE tblPerson SET ${setClause} WHERE PersonId = @personId`,
+        params
+    );
+
+    return result;
+}
+
 module.exports = {
     create,
     findById,
     findByEntityId,
     createName,
     getLatestName,
+    update,
 };

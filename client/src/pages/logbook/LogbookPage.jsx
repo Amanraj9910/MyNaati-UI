@@ -5,24 +5,27 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getLogbook } from '../../services/dashboard.service';
-import { BookOpen, ArrowLeft, Loader2, Clock, Tag } from 'lucide-react';
+import { BookOpen, ArrowLeft, Loader2, Clock, Tag, Plus } from 'lucide-react';
+import AddLogbookEntryModal from '../../components/logbook/AddLogbookEntryModal';
 
 export default function LogbookPage() {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const fetchLogbook = async () => {
+        try {
+            const res = await getLogbook();
+            setActivities(res.data || res || []);
+        } catch (err) {
+            console.error('Failed to load logbook', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        async function fetch() {
-            try {
-                const res = await getLogbook();
-                setActivities(res.data || res || []);
-            } catch (err) {
-                console.error('Failed to load logbook', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetch();
+        fetchLogbook();
     }, []);
 
     const totalHours = activities.reduce((sum, a) => sum + (a.Hours || 0), 0);
@@ -35,6 +38,9 @@ export default function LogbookPage() {
                     <BookOpen size={28} className="detail-page-icon" style={{ color: '#06b6d4' }} />
                     <h1>My Logbook</h1>
                 </div>
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary ml-auto flex items-center gap-2">
+                    <Plus size={18} /> Log Activity
+                </button>
             </div>
 
             {!loading && activities.length > 0 && (
@@ -74,6 +80,12 @@ export default function LogbookPage() {
                     ))}
                 </div>
             )}
+
+            <AddLogbookEntryModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onAdd={fetchLogbook}
+            />
         </div>
     );
 }

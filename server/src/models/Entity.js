@@ -51,4 +51,21 @@ async function findById(entityId) {
 module.exports = {
     create,
     findById,
+    update
 };
+
+/**
+ * Update entity details (e.g. WebsiteURL)
+ */
+async function update(entityId, data) {
+    const result = await query(
+        `UPDATE tblEntity
+         SET WebsiteURL = @websiteUrl
+         WHERE EntityId = @entityId`,
+        {
+            entityId: { type: sql.Int, value: entityId },
+            websiteUrl: { type: sql.NVarChar, value: data.WebsiteURL }
+        }
+    );
+    return result;
+}

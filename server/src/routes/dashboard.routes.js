@@ -66,9 +66,36 @@ router.get('/logbook', async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+router.get('/logbook/categories', async (req, res, next) => {
+    try {
+        const data = await dashboardService.getPDCategories();
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
+router.post('/logbook', async (req, res, next) => {
+    try {
+        const data = await dashboardService.addLogbookEntry(req.user.userId, req.body);
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
+router.post('/applications', async (req, res, next) => {
+    try {
+        const data = await dashboardService.createApplication(req.user.userId, req.body.typeId);
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
 router.get('/profile', async (req, res, next) => {
     try {
         const data = await dashboardService.getProfile(req.user.userId);
+    } catch (error) { next(error); }
+});
+
+router.put('/profile', async (req, res, next) => {
+    try {
+        const data = await dashboardService.updateProfile(req.user.userId, req.body);
         res.json({ success: true, data });
     } catch (error) { next(error); }
 });

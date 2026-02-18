@@ -5,24 +5,27 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getApplications } from '../../services/dashboard.service';
-import { FileText, ArrowLeft, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, ArrowLeft, Loader2, Clock, CheckCircle, XCircle, Plus, Globe, Volume2 } from 'lucide-react';
+import NewApplicationModal from '../../components/applications/NewApplicationModal';
 
 export default function ApplicationsPage() {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const fetchApplications = async () => {
+        try {
+            const res = await getApplications();
+            setApplications(res.data || res || []);
+        } catch (err) {
+            console.error('Failed to load applications', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        async function fetch() {
-            try {
-                const res = await getApplications();
-                setApplications(res.data || res || []);
-            } catch (err) {
-                console.error('Failed to load applications', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetch();
+        fetchApplications();
     }, []);
 
     return (
@@ -33,6 +36,9 @@ export default function ApplicationsPage() {
                     <FileText size={28} className="detail-page-icon" style={{ color: '#009382' }} />
                     <h1>Apply for Certification</h1>
                 </div>
+                <button onClick={() => setIsModalOpen(true)} className="btn btn-primary ml-auto flex items-center gap-2">
+                    <Plus size={18} /> New Application
+                </button>
             </div>
 
             {loading ? (
@@ -73,6 +79,11 @@ export default function ApplicationsPage() {
                     </table>
                 </div>
             )}
+
+            <NewApplicationModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
         </div>
     );
 }

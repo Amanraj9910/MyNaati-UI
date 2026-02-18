@@ -47,6 +47,26 @@ export const getLogbook = async () => {
 
 /** GET /api/dashboard/profile — User's profile data */
 export const getProfile = async () => {
-    const { data } = await api.get('/dashboard/profile');
-    return data;
+    const response = await api.get('/dashboard/profile');
+    return response.data;
+};
+
+export const updateProfile = async (data) => {
+    const response = await api.put('/dashboard/profile', data);
+    return response.data;
+};
+
+export const getPDCategories = async () => {
+    const response = await api.get('/dashboard/logbook/categories');
+    return response.data;
+};
+
+export const addLogbookEntry = async (data) => {
+    const response = await api.post('/dashboard/logbook', data);
+    return response.data;
+};
+
+export const createApplication = async (typeId) => {
+    const response = await api.post('/dashboard/applications', { typeId });
+    return response.data;
 };
