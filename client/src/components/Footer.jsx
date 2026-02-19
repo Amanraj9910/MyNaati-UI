@@ -7,6 +7,7 @@
  * Contains copyright, privacy links, and NAATI contact information.
  */
 
+import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 
 /**
@@ -28,6 +29,8 @@ function Footer() {
                 <div className="footer-section">
                     <h4 className="footer-title">Quick Links</h4>
                     <ul className="footer-links">
+                        <li><Link to="/about">About</Link></li>
+                        <li><Link to="/learn-more">Learn More</Link></li>
                         <li><a href="https://www.naati.com.au" target="_blank" rel="noreferrer">NAATI Website <ExternalLink size={12} /></a></li>
                         <li><a href="https://www.naati.com.au/contact-us/" target="_blank" rel="noreferrer">Contact Us</a></li>
                         <li><a href="https://www.naati.com.au/privacy-policy/" target="_blank" rel="noreferrer">Privacy Policy</a></li>

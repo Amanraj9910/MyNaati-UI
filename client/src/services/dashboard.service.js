@@ -70,3 +70,15 @@ export const createApplication = async (typeId) => {
     const response = await api.post('/dashboard/applications', { typeId });
     return response.data;
 };
+
+/** GET /api/dashboard/test-results — User's test results */
+export const getTestResults = async () => {
+    const { data } = await api.get('/dashboard/test-results');
+    return data;
+};
+
+/** GET /api/dashboard/test-results/:id — Single test result with components */
+export const getTestResultDetails = async (id) => {
+    const { data } = await api.get(`/dashboard/test-results/${id}`);
+    return data;
+};

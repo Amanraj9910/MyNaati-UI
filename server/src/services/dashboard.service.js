@@ -13,6 +13,8 @@ const MyNaatiUserModel = require('../models/MyNaatiUser');
 const PersonModel = require('../models/Person');
 const CredentialModel = require('../models/Credential');
 const TestSittingModel = require('../models/TestSitting');
+const TestResultModel = require('../models/TestResult');
+const SystemValueModel = require('../models/SystemValue');
 const InvoiceModel = require('../models/Invoice');
 const ApplicationModel = require('../models/Application');
 const PDModel = require('../models/ProfessionalDevelopment');
@@ -77,12 +79,13 @@ async function getDashboardSummary(userId) {
     }
 
     // Fetch all counts in parallel (gracefully handle missing tables)
-    const [credentials, tests, invoices, applications, logbook] = await Promise.all([
+    const [credentials, tests, invoices, applications, logbook, testResults] = await Promise.all([
         personId ? safeQuery(() => CredentialModel.countActive(personId)) : 0,
         personId ? safeQuery(() => TestSittingModel.countUpcoming(personId)) : 0,
         naatiNumber ? safeQuery(() => InvoiceModel.countUnpaid(naatiNumber)) : 0,
         personId ? safeQuery(() => ApplicationModel.countActive(personId)) : 0,
         personId ? safeQuery(() => PDModel.countByPersonId(personId)) : { count: 0, totalHours: 0 },
+        personId ? safeQuery(() => TestResultModel.countByPersonId(personId)) : 0,
     ]);
 
     const totalOwed = naatiNumber ? await safeQuery(() => InvoiceModel.getTotalOwed(naatiNumber)) : 0;
@@ -100,11 +103,13 @@ async function getDashboardSummary(userId) {
             activeApplications: applications,
             pdActivities: typeof logbook === 'object' ? logbook.count : logbook,
             pdHours: typeof logbook === 'object' ? logbook.totalHours : 0,
+            testResults: testResults,
         },
         quickActions: [
             { id: 'profile', title: 'My Account', emoji: '👤', path: '/profile', description: 'View and update your personal details' },
             { id: 'credentials', title: 'My Credentials', emoji: '🏅', path: '/credentials', description: 'View your current certifications' },
             { id: 'tests', title: 'Manage My Tests', emoji: '📝', path: '/tests', description: 'View your scheduled and past tests' },
+            { id: 'test-results', title: 'My Test Results', emoji: '📊', path: '/test-results', description: 'View your test outcomes and scores' },
             { id: 'invoices', title: 'My Invoices', emoji: '🧾', path: '/invoices', description: 'View and pay outstanding invoices' },
             { id: 'bills', title: 'My Bills', emoji: '💳', path: '/bills', description: 'View your transaction history' },
             { id: 'logbook', title: 'My Logbook', emoji: '📖', path: '/logbook', description: 'Log professional development activities' },
@@ -128,7 +133,11 @@ async function getCredentials(userId) {
 async function getTests(userId) {
     const { personId } = await resolveUserChain(userId);
     if (!personId) return [];
-    return safeQuery(() => TestSittingModel.findByPersonId(personId), []);
+
+    const results = await safeQuery(() => TestSittingModel.findByPersonId(personId), []);
+    console.log(`[DashboardService] getTests for PersonId ${personId}: Found ${results.length} sittings.`);
+    if (results.length > 0) console.log('[DashboardService] First sitting AttendanceId:', results[0].TestSittingId);
+    return results;
 }
 
 /**
@@ -288,6 +297,85 @@ async function createApplication(userId, typeId) {
 }
 
 /**
+ * Get user's test results with eligibility calculations.
+ */
+async function getTestResults(userId) {
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) return [];
+
+    const results = await safeQuery(() => TestResultModel.findByPersonId(personId), []);
+    console.log(`[DashboardService] getTestResults for PersonId ${personId}: Found ${results.length} results.`);
+    if (results.length > 0) {
+        console.log('[DashboardService] Sample Result Keys:', Object.keys(results[0]));
+        console.log('[DashboardService] Sample Results AttendanceId:', results[0].AttendanceId);
+    }
+    if (!results || results.length === 0) return [];
+
+    // Try to fetch system settings for eligibility windows
+    let paidReviewDays = null;
+    let supplementaryDays = null;
+    try {
+        const paidReviewSetting = await SystemValueModel.getByKey('PaidTestReviewAvailableDays');
+        if (paidReviewSetting && paidReviewSetting.Value) {
+            paidReviewDays = parseInt(paidReviewSetting.Value, 10);
+        }
+        const supplementarySetting = await SystemValueModel.getByKey('SupplementaryTestAvailableDays');
+        if (supplementarySetting && supplementarySetting.Value) {
+            supplementaryDays = parseInt(supplementarySetting.Value, 10);
+        }
+    } catch (err) {
+        logger.warn(`Could not fetch system settings for test review eligibility: ${err.message}`);
+    }
+
+    const now = new Date();
+
+    return results.map(r => {
+        // Calculate paid test review eligibility
+        let eligibleForPaidTestReview = false;
+        if (paidReviewDays !== null && r.ProcessedDate) {
+            const deadline = new Date(r.ProcessedDate);
+            deadline.setDate(deadline.getDate() + paidReviewDays);
+            eligibleForPaidTestReview = deadline >= now;
+        }
+
+        // Supplementary eligibility comes from DB flag
+        let eligibleForSupplementary = !!r.EligibleForSupplementary;
+        // If system setting exists, also check time window
+        if (eligibleForSupplementary && supplementaryDays !== null && r.ProcessedDate) {
+            const suppDeadline = new Date(r.ProcessedDate);
+            suppDeadline.setDate(suppDeadline.getDate() + supplementaryDays);
+            eligibleForSupplementary = suppDeadline >= now;
+        }
+
+        return {
+            ...r,
+            Skill: [r.Language1, r.Language2].filter(Boolean).join(' ↔ '),
+            EligibleForPaidTestReview: eligibleForPaidTestReview,
+            EligibleForSupplementary: eligibleForSupplementary,
+        };
+    });
+}
+
+/**
+ * Get detailed test result with component breakdown.
+ */
+async function getTestResultDetails(userId, testResultId) {
+    const { personId } = await resolveUserChain(userId);
+    if (!personId) return null;
+
+    const result = await safeQuery(() => TestResultModel.findById(testResultId, personId), null);
+    if (!result) return null;
+
+    const components = await safeQuery(() => TestResultModel.getComponentResults(testResultId), []);
+
+    return {
+        ...result,
+        Skill: [result.Language1, result.Language2].filter(Boolean).join(' ↔ '),
+        Components: components,
+    };
+}
+
+/**
  * Safely execute a query, returning a fallback on error (e.g. missing table).
  */
 async function safeQuery(fn, fallback = 0) {
@@ -311,4 +399,6 @@ module.exports = {
     addLogbookEntry,
     getPDCategories,
     createApplication,
+    getTestResults,
+    getTestResultDetails,
 };

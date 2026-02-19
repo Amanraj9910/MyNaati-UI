@@ -50,6 +50,7 @@ import LearnMorePage from './pages/home/LearnMorePage';
 // Dashboard Detail Pages
 import CredentialsPage from './pages/credentials/CredentialsPage';
 import TestsPage from './pages/tests/TestsPage';
+import TestResultsPage from './pages/tests/TestResultsPage';
 import InvoicesPage from './pages/invoices/InvoicesPage';
 import BillsPage from './pages/bills/BillsPage';
 import ApplicationsPage from './pages/applications/ApplicationsPage';
@@ -113,6 +114,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/credentials" element={<ProtectedRoute><CredentialsPage /></ProtectedRoute>} />
           <Route path="/tests" element={<ProtectedRoute><TestsPage /></ProtectedRoute>} />
+          <Route path="/test-results" element={<ProtectedRoute><TestResultsPage /></ProtectedRoute>} />
           <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
           <Route path="/bills" element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
           <Route path="/applications" element={<ProtectedRoute><ApplicationsPage /></ProtectedRoute>} />

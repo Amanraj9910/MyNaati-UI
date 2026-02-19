@@ -2391,3 +2391,404 @@ a:hover {
 .custom-checkbox:checked::before {
   transform: scale(1);
 }
+
+/* ==========================================================================
+   Tab Filters (Tests, Test Results)
+   ========================================================================== */
+
+.tab-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.tab-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Status Badges
+   ========================================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-upcoming {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.status-completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.status-supplementary {
+  background: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+}
+
+.status-default {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+}
+
+/* ==========================================================================
+   Detail Card Enhancements (Tests/Results)
+   ========================================================================== */
+
+.detail-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.detail-card-skill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-primary-light);
+  border-radius: var(--border-radius-sm);
+  width: fit-content;
+}
+
+.detail-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.supplementary-badge {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.detail-card-processed {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.detail-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+/* Card glow variants for results */
+.card-pass {
+  border-left: 4px solid #10b981;
+}
+
+.card-fail {
+  border-left: 4px solid #ef4444;
+}
+
+/* ==========================================================================
+   Result Badges (Pass/Fail)
+   ========================================================================== */
+
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.result-pass {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-fail {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.result-pending {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.result-other {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* ==========================================================================
+   Component Details Table (Test Results)
+   ========================================================================== */
+
+.component-details {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.component-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  padding: 0.75rem 0;
+}
+
+.component-empty {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.component-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.component-table th,
+.component-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.component-table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(248, 250, 252, 0.5);
+}
+
+.component-table tr:last-child td {
+  border-bottom: none;
+}
+
+.component-result {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.comp-pass {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.comp-fail {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.expand-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Button Variants (Tests/Results)
+   ========================================================================== */
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.btn-outline-warning {
+  background: transparent;
+  color: #d97706;
+  border: 1px solid #d97706;
+}
+
+.btn-outline-warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.btn-outline-purple {
+  background: transparent;
+  color: #7c3aed;
+  border: 1px solid #7c3aed;
+}
+
+.btn-outline-purple:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+/* ==========================================================================
+   Modal Overlay & Popup
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.15s ease-out;
+  padding: 1rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 2.5rem;
+  max-width: 440px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  color: var(--color-text-heading);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.popup-unavailable {
+  text-align: center;
+}
+
+.popup-unavailable-icon {
+  color: var(--color-warning);
+  margin-bottom: 1rem;
+}
+
+.popup-unavailable h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.popup-unavailable p {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.popup-unavailable-sub {
+  font-size: 0.85rem !important;
+  color: var(--color-text-muted) !important;
+  opacity: 0.7;
+}
+
+.popup-unavailable .btn {
+  margin-top: 1.25rem;
+  min-width: 140px;
+}

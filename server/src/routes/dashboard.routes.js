@@ -87,6 +87,21 @@ router.post('/applications', async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+router.get('/test-results', async (req, res, next) => {
+    try {
+        const data = await dashboardService.getTestResults(req.user.userId);
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
+router.get('/test-results/:id', async (req, res, next) => {
+    try {
+        const data = await dashboardService.getTestResultDetails(req.user.userId, parseInt(req.params.id));
+        if (!data) return res.status(404).json({ success: false, message: 'Test result not found' });
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
 router.get('/profile', async (req, res, next) => {
     try {
         const data = await dashboardService.getProfile(req.user.userId);

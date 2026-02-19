@@ -19,8 +19,7 @@ import {
     LogIn,
     LogOut,
     UserPlus,
-    Info,
-    BookOpen,
+
     Activity,
     Users,
     Settings,
@@ -64,15 +63,7 @@ function Navbar() {
 
                 {/* Navigation links */}
                 <div className={`navbar-links ${menuOpen ? 'active' : ''}`}>
-                    {/* Public links — always visible */}
-                    <Link to="/about" className="nav-link" onClick={() => setMenuOpen(false)}>
-                        <Info size={16} />
-                        <span>About</span>
-                    </Link>
-                    <Link to="/learn-more" className="nav-link" onClick={() => setMenuOpen(false)}>
-                        <BookOpen size={16} />
-                        <span>Learn More</span>
-                    </Link>
+
 
                     {isAuthenticated ? (
                         <>
