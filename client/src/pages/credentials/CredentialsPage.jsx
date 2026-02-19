@@ -5,7 +5,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getCredentials } from '../../services/dashboard.service';
-import { Award, ArrowLeft, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import CredentialsList from '../../components/dashboard/CredentialsList';
+import { Award, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function CredentialsPage() {
     const [credentials, setCredentials] = useState([]);
@@ -45,32 +46,7 @@ export default function CredentialsPage() {
                     <Link to="/applications" className="btn btn-primary">Apply for Certification</Link>
                 </div>
             ) : (
-                <div className="detail-table-card">
-                    <table className="detail-table">
-                        <thead>
-                            <tr>
-                                <th>Credential Type</th>
-                                <th>Status</th>
-                                <th>Effective From</th>
-                                <th>Effective To</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {credentials.map((c) => (
-                                <tr key={c.CredentialId}>
-                                    <td className="detail-primary-cell">{c.CredentialTypeName || 'Credential'}</td>
-                                    <td>
-                                        <span className={`status-badge ${c.IsActive ? 'status-active' : 'status-inactive'}`}>
-                                            {c.IsActive ? <><CheckCircle size={14} /> Active</> : <><XCircle size={14} /> Inactive</>}
-                                        </span>
-                                    </td>
-                                    <td>{c.EffectiveFrom ? new Date(c.EffectiveFrom).toLocaleDateString() : '—'}</td>
-                                    <td>{c.EffectiveTo ? new Date(c.EffectiveTo).toLocaleDateString() : 'Ongoing'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <CredentialsList credentials={credentials} />
             )}
         </div>
     );

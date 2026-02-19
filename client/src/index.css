@@ -705,6 +705,16 @@ a:hover {
   margin-top: 1rem;
 }
 
+.credentials-list-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  font-size: 0.95rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
 .credential-card {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -1684,6 +1694,7 @@ a:hover {
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
