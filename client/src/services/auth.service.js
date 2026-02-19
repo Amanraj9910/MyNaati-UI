@@ -105,3 +105,39 @@ export const refreshAccessToken = async (refreshToken) => {
     const { data } = await api.post('/auth/refresh-token', { refreshToken });
     return data;
 };
+
+/**
+ * Start MFA setup -> Generate secret & QR code.
+ * POST /api/auth/mfa/setup
+ */
+export const setupMfa = async () => {
+    const { data } = await api.post('/auth/mfa/setup');
+    return data;
+};
+
+/**
+ * Enable MFA after verifying the first code.
+ * POST /api/auth/mfa/enable
+ */
+export const enableMfa = async (code) => {
+    const { data } = await api.post('/auth/mfa/enable', { code });
+    return data;
+};
+
+/**
+ * Disable MFA.
+ * POST /api/auth/mfa/disable
+ */
+export const disableMfa = async () => {
+    const { data } = await api.post('/auth/mfa/disable');
+    return data;
+};
+
+/**
+ * Verify MFA code during login.
+ * POST /api/auth/mfa/verify
+ */
+export const verifyMfaLogin = async (tempToken, code) => {
+    const { data } = await api.post('/auth/mfa/verify', { tempToken, code });
+    return data;
+};

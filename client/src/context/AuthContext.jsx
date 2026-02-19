@@ -64,9 +64,11 @@ export function AuthProvider({ children }) {
      * @param {string} password
      * @returns {Promise<Object>} The logged-in user data
      */
-    const login = useCallback(async (username, password) => {
-        const response = await authService.login(username, password);
-        const { accessToken, refreshToken, user: userData } = response.data;
+    /**
+     * Handle successful login (from login or MFA verify).
+     */
+    const completeLogin = useCallback((data) => {
+        const { accessToken, refreshToken, user: userData } = data;
 
         // Persist tokens and user data
         localStorage.setItem('accessToken', accessToken);
@@ -76,6 +78,30 @@ export function AuthProvider({ children }) {
         setUser(userData);
         return userData;
     }, []);
+
+    /**
+     * Log in a user with username and password.
+     * Stores tokens in localStorage and updates the user state.
+     * 
+     * @param {string} username
+     * @param {string} password
+     * @returns {Promise<Object>} The logged-in user data or MFA requirement
+     */
+    const login = useCallback(async (username, password) => {
+        const response = await authService.login(username, password);
+
+        // The backend wraps response as { success, data: { ... } }
+        // So MFA fields are under response.data
+        const result = response.data;
+
+        // MFA Challenge
+        if (result.mfaRequired) {
+            return { mfaRequired: true, tempToken: result.tempToken };
+        }
+
+        // Normal Login — result contains { accessToken, refreshToken, user }
+        return completeLogin(result);
+    }, [completeLogin]);
 
     /**
      * Register a new user account.
@@ -122,6 +148,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        completeLogin,
         isAuthenticated,
         hasRole,
     };

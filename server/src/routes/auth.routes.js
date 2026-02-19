@@ -176,4 +176,70 @@ router.get('/me', authenticate, async (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/auth/mfa/setup
+ * Start MFA setup -> Generate secret & QR code.
+ */
+router.post('/mfa/setup', authenticate, async (req, res, next) => {
+    try {
+        const result = await authService.setupMfa(req.user.userId);
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/auth/mfa/enable
+ * Finalize MFA setup -> Verify code & activate.
+ */
+router.post('/mfa/enable', authenticate, async (req, res, next) => {
+    try {
+        const result = await authService.enableMfa(req.user.userId, req.body.code);
+        res.json({
+            success: true,
+            message: result.message
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/auth/mfa/disable
+ * Disable MFA for the user.
+ */
+router.post('/mfa/disable', authenticate, async (req, res, next) => {
+    try {
+        const result = await authService.disableMfa(req.user.userId);
+        res.json({
+            success: true,
+            message: result.message
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/auth/mfa/verify
+ * Complete login by verifying MFA code.
+ * Requires the tempToken received from the login step.
+ */
+router.post('/mfa/verify', async (req, res, next) => {
+    try {
+        const { tempToken, code } = req.body;
+        const result = await authService.verifyMfaLogin(tempToken, code);
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

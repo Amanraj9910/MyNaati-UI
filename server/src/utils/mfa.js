@@ -18,6 +18,9 @@
 const { authenticator } = require('otplib');
 const QRCode = require('qrcode');
 
+// Allow ±2 time steps (±60 seconds) for clock drift
+authenticator.options = { window: 2 };
+
 /**
  * Generate a new TOTP secret key for a user.
  * This secret should be stored securely in the database.

@@ -101,9 +101,9 @@ function Navbar() {
                                 <span className="nav-username">
                                     {user?.givenName || user?.fullName || 'User'}
                                 </span>
-                                <Link to="/change-password" className="nav-link" onClick={() => setMenuOpen(false)}>
+                                <Link to="/account" className="nav-link" onClick={() => setMenuOpen(false)}>
                                     <Settings size={16} />
-                                    <span>Settings</span>
+                                    <span>My Account</span>
                                 </Link>
                                 <button className="nav-link nav-logout-btn" onClick={handleLogout}>
                                     <LogOut size={16} />

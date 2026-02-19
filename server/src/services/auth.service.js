@@ -115,6 +115,17 @@ async function login(username, password) {
     // Retrieve profile via MyNaatiUser → Entity → Person
     const { myNaatiLink, personDetails } = await getMyNaatiProfile(aspUser.UserId);
 
+    // CHECK FOR MFA
+    if (personDetails && personDetails.MfaCode && personDetails.MfaExpireStartDate) {
+        // MFA Enabled - Return temp token
+        const { generateMfaToken } = require('../utils/jwt');
+        const mfaToken = generateMfaToken(aspUser.UserId);
+        return {
+            mfaRequired: true,
+            tempToken: mfaToken
+        };
+    }
+
     // Construct token payload
     const userPayload = {
         userId: aspUser.UserId,  // GUID
@@ -394,6 +405,143 @@ async function resetPassword(token, newPassword) {
  * @param {number} personId - The user's PersonId
  * @returns {Promise<Object>} User profile data
  */
+/**
+ * Start MFA setup for a user.
+ * Generates secret and QR code URL.
+ * Temporarily stores secret in DB (but MFA is not active until enabled).
+ */
+async function setupMfa(userId) {
+    const { personDetails } = await getMyNaatiProfile(userId);
+    if (!personDetails) {
+        throw Object.assign(new Error('User profile not found'), { statusCode: 404 });
+    }
+
+    const membership = await AspnetMembershipModel.findByUserId(userId);
+    const email = membership.Email;
+
+    // Check if there is already a pending secret (MFA not enabled yet)
+    let secret = personDetails.MfaCode;
+    const isMfaEnabled = !!personDetails.MfaExpireStartDate;
+
+    if (!secret || isMfaEnabled) {
+        // Generate new secret if none exists or if MFA was previously enabled (and now we are re-setting it up?)
+        // Actually, if MFA is enabled, 'setupMfa' usually implies re-configuration.
+        // But for safety, if it's just pending (not enabled), we reuse.
+        secret = generateSecret();
+
+        // Save secret to DB, but keep MfaExpireStartDate null (inactive)
+        await PersonModel.update(personDetails.PersonId, { MfaCode: secret });
+        logger.info(`MFA Setup initiated for user ${userId}. New secret generated.`);
+    } else {
+        logger.info(`MFA Setup continued for user ${userId}. Reusing pending secret.`);
+    }
+
+    const qrCodeUrl = await generateQrCodeUrl(email, secret);
+
+    return { secret, qrCodeUrl };
+}
+
+/**
+ * Enable MFA after verifying the first code.
+ */
+async function enableMfa(userId, token) {
+    const { personDetails } = await getMyNaatiProfile(userId);
+    if (!personDetails || !personDetails.MfaCode) {
+        throw Object.assign(new Error('MFA setup not initiated'), { statusCode: 400 });
+    }
+
+    // DEBUG LOGGING
+    logger.info(`Attempting MFA Enable for user ${userId}`);
+    // logger.info(`Stored Secret: ${personDetails.MfaCode}`); // CAUTION: Don't log secrets in prod
+    logger.info(`Provided Token: ${token}`);
+
+    const isValid = verifyMfaToken(token, personDetails.MfaCode);
+
+    if (!isValid) {
+        logger.warn(`MFA Verification Failed for user ${userId}. Token: ${token}`);
+        throw Object.assign(new Error('Invalid verification code'), { statusCode: 400 });
+    }
+
+    // Activate MFA by setting MfaExpireStartDate
+    await PersonModel.update(personDetails.PersonId, { MfaExpireStartDate: new Date() });
+
+    return { message: 'MFA enabled successfully' };
+}
+
+/**
+ * Disable MFA for a user.
+ */
+async function disableMfa(userId) {
+    const { personDetails } = await getMyNaatiProfile(userId);
+    if (!personDetails) {
+        throw Object.assign(new Error('User profile not found'), { statusCode: 404 });
+    }
+
+    await PersonModel.update(personDetails.PersonId, { MfaCode: null, MfaExpireStartDate: null });
+    return { message: 'MFA disabled successfully' };
+}
+
+/**
+ * Verify MFA code during login.
+ */
+async function verifyMfaLogin(tempToken, token) {
+    let decoded;
+    try {
+        const { verifyAccessToken } = require('../utils/jwt');
+        decoded = verifyAccessToken(tempToken);
+    } catch (err) {
+        throw Object.assign(new Error('Session expired. Please log in again.'), { statusCode: 401 });
+    }
+
+    if (!decoded.mfaPending) {
+        throw Object.assign(new Error('Invalid session state'), { statusCode: 400 });
+    }
+
+    const userId = decoded.userId;
+    const { personDetails } = await getMyNaatiProfile(userId);
+
+    if (!personDetails || !personDetails.MfaCode) {
+        throw Object.assign(new Error('MFA not configured for this user'), { statusCode: 400 });
+    }
+
+    const isValid = verifyMfaToken(token, personDetails.MfaCode);
+    if (!isValid) {
+        throw Object.assign(new Error('Invalid code'), { statusCode: 400 });
+    }
+
+    // MFA Verified - Generate real tokens
+    const membership = await AspnetMembershipModel.findByUserId(userId);
+    const myNaatiLink = await MyNaatiUserModel.findByAspUserId(userId);
+
+    const userPayload = {
+        userId: userId,
+        personId: personDetails.PersonId,
+        roles: ['Applicant']
+    };
+
+    const tokens = generateTokens(userPayload);
+    return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+            UserId: userId,
+            Email: membership.Email,
+            Role: 'Applicant',
+            PersonId: userPayload.personId,
+            NaatiNumber: myNaatiLink ? myNaatiLink.NaatiNumber : null,
+            GivenName: personDetails.GivenName
+        }
+    };
+}
+
+/**
+ * Get the current authenticated MyNaati user's profile.
+ * Uses aspnet_Users + aspnet_Membership + tblMyNaatiUser + tblPerson.
+ * 
+ * @param {string} userId - The ASP.NET User GUID
+ * @param {number} personId - The user's PersonId
+ * @returns {Promise<Object>} User profile data
+ */
 async function getCurrentUser(userId, personId) {
     const aspUser = await AspnetUserModel.findByUserId(userId);
     if (!aspUser) {
@@ -402,6 +550,8 @@ async function getCurrentUser(userId, personId) {
 
     const membership = await AspnetMembershipModel.findByUserId(userId);
     const { myNaatiLink, personDetails } = await getMyNaatiProfile(userId);
+
+    const isMfaEnabled = !!(personDetails && personDetails.MfaCode && personDetails.MfaExpireStartDate);
 
     return {
         userId: aspUser.UserId,
@@ -413,6 +563,7 @@ async function getCurrentUser(userId, personId) {
         middleName: personDetails?.MiddleName || null,
         naatiNumber: myNaatiLink?.NaatiNumber || null,
         roles: ['Applicant'],
+        mfaEnabled: isMfaEnabled
     };
 }
 
@@ -424,4 +575,8 @@ module.exports = {
     forgotPassword,
     resetPassword,
     getCurrentUser,
+    setupMfa,
+    enableMfa,
+    disableMfa,
+    verifyMfaLogin
 };

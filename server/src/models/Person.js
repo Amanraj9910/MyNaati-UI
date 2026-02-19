@@ -135,7 +135,7 @@ async function getLatestName(personId) {
 
 async function update(personId, data) {
     // Only allow updating specific fields
-    const allowedFields = ['Gender', 'BirthDate']; // Corrected field names for tblPerson
+    const allowedFields = ['Gender', 'BirthDate', 'MfaCode', 'MfaExpireStartDate', 'LastEmailCode', 'EmailCodeExpireStartDate']; // Allowed update fields
     const updates = {};
 
     // Build update object
@@ -159,10 +159,17 @@ async function update(personId, data) {
         personId: { type: sql.Int, value: personId }
     };
 
-    // Add params
+    // Add params with correct SQL types
+    const dateTimeFields = ['BirthDate', 'MfaExpireStartDate', 'EmailCodeExpireStartDate'];
     for (const [key, value] of Object.entries(updates)) {
+        let paramType = sql.NVarChar;
+        if (dateTimeFields.includes(key)) {
+            paramType = sql.DateTime;
+        } else if (key === 'Gender') {
+            paramType = sql.NChar;
+        }
         params[key] = {
-            type: key === 'BirthDate' ? sql.DateTime : (key === 'Gender' ? sql.NChar : sql.NVarChar),
+            type: paramType,
             value: value
         };
     }

@@ -40,7 +40,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import ChangePasswordPage from './pages/auth/ChangePasswordPage';
+
 
 // Home pages (Module 1)
 import DashboardPage from './pages/home/DashboardPage';
@@ -54,7 +54,7 @@ import InvoicesPage from './pages/invoices/InvoicesPage';
 import BillsPage from './pages/bills/BillsPage';
 import ApplicationsPage from './pages/applications/ApplicationsPage';
 import LogbookPage from './pages/logbook/LogbookPage';
-import ProfilePage from './pages/profile/ProfilePage';
+import AccountPage from './pages/profile/AccountPage';
 
 // Admin pages
 import DiagnosticsPage from './pages/admin/DiagnosticsPage';
@@ -62,6 +62,8 @@ import UserSearchPage from './pages/admin/UserSearchPage';
 
 // Error pages
 import { NotFoundPage, ForbiddenPage } from './pages/ErrorPages';
+
+
 
 /** React Query client with default configuration */
 const queryClient = new QueryClient({
@@ -115,9 +117,12 @@ function AppRoutes() {
           <Route path="/bills" element={<ProtectedRoute><BillsPage /></ProtectedRoute>} />
           <Route path="/applications" element={<ProtectedRoute><ApplicationsPage /></ProtectedRoute>} />
           <Route path="/logbook" element={<ProtectedRoute><LogbookPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          {/* New Account Page (Profile + Security) */}
+          <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
 
-          <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+          {/* Redirect legacy routes */}
+          <Route path="/profile" element={<Navigate to="/account" replace />} />
+          <Route path="/change-password" element={<Navigate to="/account" replace />} />
 
           {/* Admin-only pages — require Admin role */}
           <Route path="/admin/diagnostics" element={<ProtectedRoute roles={['Admin', 'SystemAdmin']}><DiagnosticsPage /></ProtectedRoute>} />
