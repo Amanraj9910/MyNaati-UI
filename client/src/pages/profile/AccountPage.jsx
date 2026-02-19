@@ -8,12 +8,14 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Lock, Shield, ArrowLeft, Loader2, MapPin, Mail, Phone, Hash, Globe, Edit2, Plus, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { User, Lock, Shield, ArrowLeft, Loader2, MapPin, Mail, Phone, Hash, Globe, Edit2, Plus, AlertCircle, CheckCircle, XCircle, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getProfile } from '../../services/dashboard.service';
+import { getProfile, getCredentials, updateProfile } from '../../services/dashboard.service';
 import * as authService from '../../services/auth.service';
 import EditProfileModal from '../../components/profile/EditProfileModal';
 import EditAddressModal from '../../components/profile/EditAddressModal';
+import EditPhoneModal from '../../components/profile/EditPhoneModal';
+import EditEmailModal from '../../components/profile/EditEmailModal';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
@@ -25,12 +27,19 @@ export default function AccountPage() {
     // Profile Modal State
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+    const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
+    const [editingPhone, setEditingPhone] = useState(null);
+    const [credentials, setCredentials] = useState([]);
 
     const fetchProfile = async () => {
         try {
             const res = await getProfile();
             setProfile(res.data || res);
+            const creds = await getCredentials();
+            setCredentials(creds.data || creds);
         } catch (err) {
             console.error('Failed to load profile', err);
             toast.error('Failed to load profile data');
@@ -69,6 +78,12 @@ export default function AccountPage() {
                     <User size={18} /> My Profile
                 </button>
                 <button
+                    className={`account-tab ${activeTab === 'credentials' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('credentials')}
+                >
+                    <Award size={18} /> My Credentials
+                </button>
+                <button
                     className={`account-tab ${activeTab === 'security' ? 'active' : ''}`}
                     onClick={() => setActiveTab('security')}
                 >
@@ -81,9 +96,16 @@ export default function AccountPage() {
                     <ProfileSection
                         profile={profile}
                         refreshProfile={fetchProfile}
+
                         openProfileModal={() => setIsProfileModalOpen(true)}
                         openAddressModal={(addr) => { setEditingAddress(addr); setIsAddressModalOpen(true); }}
+                        openPhoneModal={(ph) => { setEditingPhone(ph); setIsPhoneModalOpen(true); }}
+                        openEmailModal={() => setIsEmailModalOpen(true)}
                     />
+                )}
+
+                {activeTab === 'credentials' && (
+                    <CredentialsSection credentials={credentials} refreshCredentials={fetchProfile} />
                 )}
 
                 {activeTab === 'security' && (
@@ -105,11 +127,24 @@ export default function AccountPage() {
                 address={editingAddress}
                 onUpdate={fetchProfile}
             />
+
+            <EditPhoneModal
+                isOpen={isPhoneModalOpen}
+                onClose={() => setIsPhoneModalOpen(false)}
+                phone={editingPhone}
+                onUpdate={fetchProfile}
+            />
+
+            <EditEmailModal
+                isOpen={isEmailModalOpen}
+                onClose={() => setIsEmailModalOpen(false)}
+                onUpdate={fetchProfile}
+            />
         </div>
     );
 }
 
-function ProfileSection({ profile, openProfileModal, openAddressModal }) {
+function ProfileSection({ profile, openProfileModal, openAddressModal, openPhoneModal, openEmailModal }) {
     const name = profile?.name;
     const person = profile?.person;
     const addresses = profile?.addresses || [];
@@ -161,7 +196,12 @@ function ProfileSection({ profile, openProfileModal, openAddressModal }) {
 
                 {/* Contact Info */}
                 <div className="profile-section">
-                    <h3><Mail size={18} /> Email Addresses</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3><Mail size={18} /> Email Addresses</h3>
+                        <button className="btn-icon-primary" onClick={openEmailModal} title="Add Email">
+                            <Plus size={16} /> Add
+                        </button>
+                    </div>
                     {emails.length > 0 ? (
                         <div className="profile-list">
                             {emails.map((e) => (
@@ -176,12 +216,26 @@ function ProfileSection({ profile, openProfileModal, openAddressModal }) {
 
                 {/* Phone Numbers */}
                 <div className="profile-section">
-                    <h3><Phone size={18} /> Phone Numbers</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3><Phone size={18} /> Phone Numbers</h3>
+                        <button className="btn-icon-primary" onClick={() => openPhoneModal(null)} title="Add Phone">
+                            <Plus size={16} /> Add
+                        </button>
+                    </div>
                     {phones.length > 0 ? (
                         <div className="profile-list">
                             {phones.map((p, i) => (
                                 <div key={p.PhoneId || i} className="profile-list-item">
-                                    <span className="profile-list-value">{p.Phone || p.PhoneNumber || '—'}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span className="profile-list-value">{p.Number || p.Phone || '—'}</span>
+                                        <span className="profile-list-sub">
+                                            {p.PrimaryContact && <span className="status-badge status-active">Primary</span>}
+                                            {p.IncludeInPD && <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#666' }}>Public</span>}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => openPhoneModal(p)} className="btn-icon" style={{ border: 'none' }}>
+                                        <Edit2 size={16} />
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -246,6 +300,121 @@ function SecuritySection() {
         <div className="fade-in profile-grid">
             <ChangePasswordCard />
             <MfaCard />
+        </div>
+    );
+}
+
+function CredentialsSection({ credentials, refreshCredentials }) {
+    const [localCreds, setLocalCreds] = useState(credentials);
+
+    useEffect(() => { setLocalCreds(credentials); }, [credentials]);
+
+    const getStatus = (c) => {
+        if (c.TerminationDate) return { label: 'Terminated', cls: 'status-terminated' };
+        if (c.EffectiveTo && new Date(c.EffectiveTo) < new Date()) return { label: 'Expired', cls: 'status-expired' };
+        return { label: 'Active', cls: 'status-active' };
+    };
+
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '—';
+
+    const toggleDirectory = async (id, currentVal) => {
+        // Optimistic update
+        setLocalCreds(prev => prev.map(c =>
+            c.CredentialId === id ? { ...c, ShowInOnlineDirectory: !currentVal } : c
+        ));
+        try {
+            await updateProfile({ type: 'credential_update', data: { CredentialId: id, ShowInOnlineDirectory: !currentVal } });
+            toast.success('Updated visibility');
+        } catch (error) {
+            // Revert on error
+            setLocalCreds(prev => prev.map(c =>
+                c.CredentialId === id ? { ...c, ShowInOnlineDirectory: currentVal } : c
+            ));
+            toast.error('Failed to update');
+        }
+    };
+
+    const getLanguagePair = (c) => {
+        if (c.Language1 && c.Language2) return `${c.Language1} ↔ ${c.Language2}`;
+        if (c.Language1) return c.Language1;
+        return null;
+    };
+
+    return (
+        <div className="fade-in">
+            <div className="profile-section">
+                <h3><Award size={18} /> My Credentials</h3>
+                {localCreds.length > 0 ? (
+                    <div className="credentials-list">
+                        {localCreds.map(c => {
+                            const status = getStatus(c);
+                            const langPair = getLanguagePair(c);
+                            return (
+                                <div key={c.CredentialId} className="credential-card">
+                                    <div className="credential-header">
+                                        <div className="credential-title-group">
+                                            <div className="credential-icon">
+                                                <Award size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="credential-name">{c.CredentialName || `Credential #${c.CredentialId}`}</h4>
+                                                {langPair && <span className="credential-lang">{langPair}</span>}
+                                            </div>
+                                        </div>
+                                        <span className={`status-badge ${status.cls}`}>
+                                            {status.label}
+                                        </span>
+                                    </div>
+
+                                    <div className="credential-grid">
+                                        <div className="credential-field">
+                                            <span className="field-label">Credential ID</span>
+                                            <span className="field-value">{c.CredentialId}</span>
+                                        </div>
+                                        <div className="credential-field">
+                                            <span className="field-label">Valid From</span>
+                                            <span className="field-value">{formatDate(c.EffectiveFrom)}</span>
+                                        </div>
+                                        <div className="credential-field">
+                                            <span className="field-label">Expires</span>
+                                            <span className="field-value">{formatDate(c.EffectiveTo)}</span>
+                                        </div>
+                                        {c.TerminationDate && (
+                                            <div className="credential-field">
+                                                <span className="field-label">Terminated</span>
+                                                <span className="field-value" style={{ color: '#ef4444' }}>{formatDate(c.TerminationDate)}</span>
+                                            </div>
+                                        )}
+                                        {c.CredentialLevel && (
+                                            <div className="credential-field">
+                                                <span className="field-label">Level</span>
+                                                <span className="field-value">{c.CredentialLevel}</span>
+                                            </div>
+                                        )}
+                                        <div className="credential-field">
+                                            <span className="field-label">Online Directory</span>
+                                            <span className="field-value">{c.ShowInOnlineDirectory ? '✅ Visible' : '❌ Hidden'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="credential-footer">
+                                        <label className="checkbox-label" style={{ fontSize: '0.9rem' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={!!c.ShowInOnlineDirectory}
+                                                onChange={() => toggleDirectory(c.CredentialId, c.ShowInOnlineDirectory)}
+                                            />
+                                            <span>Show in Online Directory</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="profile-empty">No active credentials found.</p>
+                )}
+            </div>
         </div>
     );
 }

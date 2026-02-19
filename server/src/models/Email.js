@@ -24,9 +24,9 @@ const { query, sql } = require('../config/database');
  */
 async function create({ entityId, email }) {
     const result = await query(
-        `INSERT INTO tblEmail (EntityId, Address, Note, IncludeInPD, IsPreferredEmail, Invalid, ExaminerCorrespondence)
+        `INSERT INTO tblEmail (EntityId, Email, Note, IncludeInPD, IsPreferredEmail, Invalid, ExaminerCorrespondence)
      OUTPUT INSERTED.EmailId
-     VALUES (@entityId, @email, '', 0, 1, 0, 0)`,
+     VALUES (@entityId, @email, '', 0, 0, 0, 0)`,
         {
             entityId: { type: sql.Int, value: entityId },
             email: { type: sql.VarChar, value: email },
@@ -44,7 +44,7 @@ async function create({ entityId, email }) {
  */
 async function findByEmail(email) {
     const result = await query(
-        `SELECT * FROM tblEmail WHERE Address = @email`,
+        `SELECT * FROM tblEmail WHERE Email = @email`,
         { email: { type: sql.VarChar, value: email } }
     );
     return result.recordset[0] || null;

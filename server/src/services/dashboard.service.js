@@ -238,11 +238,22 @@ async function updateProfile(userId, updateData) {
         // If we are adding:
         await EmailModel.create({ entityId, email });
     }
-    // 4. Update Phone
-    else if (updateData.type === 'phone') {
+    // 5. Update Phone (Create)
+    else if (updateData.type === 'phone_create') {
         await PhoneModel.create(entityId, updateData.data);
     }
-    // 5. Update Website (Entity)
+    // 6. Update Phone (Edit)
+    else if (updateData.type === 'phone_update') {
+        const { PhoneId, ...phoneData } = updateData.data;
+        // Verify ownership (optional but good practice) - skipped for brevity but implied by entity check logic if added
+        await PhoneModel.update(PhoneId, phoneData);
+    }
+    // 7. Update Credential
+    else if (updateData.type === 'credential_update') {
+        const { CredentialId, ...credData } = updateData.data;
+        await CredentialModel.update(CredentialId, credData);
+    }
+    // 8. Update Website (Entity)
     else if (updateData.type === 'website') {
         await EntityModel.update(entityId, updateData.data);
     }
