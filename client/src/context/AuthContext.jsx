@@ -141,6 +141,17 @@ export function AuthProvider({ children }) {
         return user?.roles?.includes(role) || false;
     }, [user]);
 
+    const reloadUser = useCallback(async () => {
+        try {
+            const response = await authService.getCurrentUser();
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('Failed to reload user session', error);
+        }
+    }, []);
+
     // Context value provided to all children
     const value = {
         user,
@@ -149,6 +160,7 @@ export function AuthProvider({ children }) {
         register,
         logout,
         completeLogin,
+        reloadUser,
         isAuthenticated,
         hasRole,
     };
@@ -164,7 +176,7 @@ export function AuthProvider({ children }) {
  * Custom hook to access auth context.
  * Must be used within an AuthProvider.
  * 
- * @returns {{ user, loading, login, register, logout, isAuthenticated, hasRole }}
+ * @returns {{ user, loading, login, register, logout, reloadUser, isAuthenticated, hasRole }}
  */
 export function useAuth() {
     const context = useContext(AuthContext);

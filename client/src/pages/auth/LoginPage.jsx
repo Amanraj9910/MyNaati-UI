@@ -28,6 +28,7 @@ function LoginPage() {
     const location = useLocation();
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorPopup, setErrorPopup] = useState(null);
 
     // MFA State
     const [mfaStep, setMfaStep] = useState(false);
@@ -79,7 +80,11 @@ function LoginPage() {
             }
         } catch (error) {
             const message = error.response?.data?.message || 'Login failed. Please try again.';
-            toast.error(message);
+            if (message.toLowerCase().includes('invalid credentials')) {
+                setErrorPopup('Incorrect username or password. Please try again.');
+            } else {
+                toast.error(message);
+            }
             if (mfaStep) {
                 // If MFA fails, maybe allow retry. 
             }
@@ -218,6 +223,22 @@ function LoginPage() {
                     )}
                 </div>
             </div>
+
+            {/* Error Popup Modal */}
+            {errorPopup && (
+                <div className="modal-overlay" onClick={() => setErrorPopup(null)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', padding: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: '#ef4444' }}>
+                            <AlertCircle size={48} />
+                        </div>
+                        <h2 style={{ marginBottom: '1rem' }}>Login Failed</h2>
+                        <p style={{ marginBottom: '2rem', color: '#6b7280' }}>{errorPopup}</p>
+                        <button type="button" className="btn btn-primary btn-full" onClick={() => setErrorPopup(null)}>
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

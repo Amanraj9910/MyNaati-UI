@@ -108,6 +108,8 @@ async function login(username, password) {
     // Validate Password against ASP.NET Membership hash
     const isValid = PasswordUtils.validatePassword(password, membership.PasswordSalt, membership.Password);
 
+    console.log('[DEBUG LOGIN] password:', password, 'salt:', membership.PasswordSalt, 'dbHash:', membership.Password, 'computedHash:', PasswordUtils.hashPassword(password, membership.PasswordSalt), 'isValid:', isValid);
+
     if (!isValid) {
         throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
     }
@@ -116,7 +118,8 @@ async function login(username, password) {
     const { myNaatiLink, personDetails } = await getMyNaatiProfile(aspUser.UserId);
 
     // CHECK FOR MFA
-    if (personDetails && personDetails.MfaCode && personDetails.MfaExpireStartDate) {
+    const isMfaEnabled = !!(personDetails && personDetails.MfaCode && personDetails.MfaExpireStartDate);
+    if (isMfaEnabled) {
         // MFA Enabled - Return temp token
         const { generateMfaToken } = require('../utils/jwt');
         const mfaToken = generateMfaToken(aspUser.UserId);
@@ -144,6 +147,7 @@ async function login(username, password) {
             PersonId: userPayload.personId,
             NaatiNumber: myNaatiLink ? myNaatiLink.NaatiNumber : null,
             GivenName: personDetails ? personDetails.GivenName : 'User',
+            mfaEnabled: false // explicitly false here because if true, it would have returned early via mfaRequired
         },
     };
 }
@@ -225,6 +229,7 @@ async function register({ givenName, surname, email, password, middleName, dateO
                 PersonId: personId,
                 NaatiNumber: naatiNumberInt,
                 GivenName: givenName,
+                mfaEnabled: false
             }
         };
 
@@ -529,7 +534,8 @@ async function verifyMfaLogin(tempToken, token) {
             Role: 'Applicant',
             PersonId: userPayload.personId,
             NaatiNumber: myNaatiLink ? myNaatiLink.NaatiNumber : null,
-            GivenName: personDetails.GivenName
+            GivenName: personDetails.GivenName,
+            mfaEnabled: true // Always true because this is the MFA verify step
         }
     };
 }

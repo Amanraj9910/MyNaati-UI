@@ -387,7 +387,7 @@ function ChangePasswordCard() {
 import { Eye, EyeOff } from 'lucide-react';
 
 function MfaCard() {
-    const { user } = useAuth();
+    const { user, reloadUser } = useAuth();
     const [isMfaEnabled, setIsMfaEnabled] = useState(false);
     const [setupData, setSetupData] = useState(null); // { secret, qrCodeUrl }
     const [step, setStep] = useState('status'); // 'status', 'setup', 'verify'
@@ -418,8 +418,7 @@ function MfaCard() {
             toast.success('MFA Enabled Successfully!');
             setIsMfaEnabled(true);
             setStep('status');
-            // Optimistically update user context if possible, or reload page
-            // For now, next login will enforce it.
+            if (reloadUser) await reloadUser();
         } catch (error) {
             toast.error('Invalid code. Try again.');
         } finally {
@@ -434,6 +433,7 @@ function MfaCard() {
             await authService.disableMfa();
             toast.success('MFA Disabled');
             setIsMfaEnabled(false);
+            if (reloadUser) await reloadUser();
         } catch (error) {
             toast.error('Failed to disable MFA');
         } finally {
