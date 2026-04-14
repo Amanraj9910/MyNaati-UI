@@ -11,6 +11,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
@@ -76,6 +77,21 @@ app.get('/api/health', (req, res) => {
 
 /** Mount all API routes under /api prefix */
 app.use('/api', routes);
+
+// ---------------------------------------------------------------------------
+// Serve Frontend Static Files
+// ---------------------------------------------------------------------------
+
+/** Serve static files from the public directory */
+app.use(express.static(path.join(__dirname, '../public')));
+
+/** Catch-all for non-API routes to support React Router */
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        return next();
+    }
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 // ---------------------------------------------------------------------------
 // Error Handling
