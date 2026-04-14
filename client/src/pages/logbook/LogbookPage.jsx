@@ -14,14 +14,9 @@ export default function LogbookPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchLogbook = async () => {
-        try {
-            const res = await getLogbook();
-            setActivities(res.data || res || []);
-        } catch (err) {
-            console.error('Failed to load logbook', err);
-        } finally {
-            setLoading(false);
-        }
+        // Disabled fetching real data for now per user request
+        setActivities([]);
+        setLoading(false);
     };
 
     useEffect(() => {

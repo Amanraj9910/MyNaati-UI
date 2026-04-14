@@ -40,7 +40,7 @@ const SECTION_CONFIG = [
         id: 'tests', title: 'Manage My Tests', path: '/tests',
         icon: ClipboardList, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)',
         description: 'View your scheduled and past tests',
-        statKey: 'upcomingTests', statLabel: 'Upcoming',
+        statKey: 'testResults', statLabel: 'Completed',
     },
     {
         id: 'invoices', title: 'My Invoices', path: '/invoices',
@@ -58,13 +58,13 @@ const SECTION_CONFIG = [
         id: 'logbook', title: 'My Logbook', path: '/logbook',
         icon: BookOpen, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)',
         description: 'Log professional development activities',
-        statKey: 'pdActivities', statLabel: 'Activities',
+        statKey: null,
     },
     {
         id: 'apply', title: 'Apply for Certification', path: '/applications',
         icon: FileText, color: '#009382', bg: 'rgba(0, 147, 130, 0.1)',
         description: 'Start a new credential application',
-        statKey: 'activeApplications', statLabel: 'In Progress',
+        statKey: null,
     },
 ];
 

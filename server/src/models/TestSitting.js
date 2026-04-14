@@ -76,4 +76,19 @@ async function countUpcoming(personId) {
     return result.recordset[0].count;
 }
 
-module.exports = { findByPersonId, countUpcoming };
+async function countCompleted(personId) {
+    const result = await query(
+        `SELECT COUNT(*) AS count 
+         FROM tblTestSitting ts
+         INNER JOIN tblTestSession tsess ON ts.TestSessionId = tsess.TestSessionId
+         INNER JOIN tblCredentialRequest cr ON ts.CredentialRequestId = cr.CredentialRequestId
+         INNER JOIN tblCredentialApplication ca ON cr.CredentialApplicationId = ca.CredentialApplicationId
+         WHERE ca.PersonId = @personId
+           AND ts.Rejected = 0
+           AND (ts.Sat = 1 OR tsess.TestDateTime < GETDATE())`,
+        { personId: { type: sql.Int, value: personId } }
+    );
+    return result.recordset[0].count;
+}
+
+module.exports = { findByPersonId, countUpcoming, countCompleted };

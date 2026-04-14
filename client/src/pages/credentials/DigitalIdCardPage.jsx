@@ -187,9 +187,9 @@ export default function DigitalIdCardPage() {
                     </div>
 
                     <div className="cred-status-footer">
-                        <button className="cred-btn-secondary">
+                        {/* <button className="cred-btn-secondary">
                             View Full Transcript
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>

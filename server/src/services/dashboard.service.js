@@ -86,7 +86,7 @@ async function getDashboardSummary(userId) {
         naatiNumber ? safeQuery(() => InvoiceModel.countUnpaid(naatiNumber)) : 0,
         personId ? safeQuery(() => ApplicationModel.countActive(personId)) : 0,
         personId ? safeQuery(() => PDModel.countByPersonId(personId)) : { count: 0, totalHours: 0 },
-        personId ? safeQuery(() => TestResultModel.countByPersonId(personId)) : 0,
+        personId ? safeQuery(() => TestSittingModel.countCompleted(personId)) : 0,
     ]);
 
     const totalOwed = naatiNumber ? await safeQuery(() => InvoiceModel.getTotalOwed(naatiNumber)) : 0;

@@ -14,14 +14,9 @@ export default function ApplicationsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchApplications = async () => {
-        try {
-            const res = await getApplications();
-            setApplications(res.data || res || []);
-        } catch (err) {
-            console.error('Failed to load applications', err);
-        } finally {
-            setLoading(false);
-        }
+        // Disabled fetching real data for now per user request
+        setApplications([]);
+        setLoading(false);
     };
 
     useEffect(() => {
