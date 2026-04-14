@@ -54,9 +54,14 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+        
+        // Skip intercepting auth routes to allow their own error handlers to run
+        const isAuthRoute = originalRequest.url?.includes('/auth/login') || 
+                            originalRequest.url?.includes('/auth/refresh-token') ||
+                            originalRequest.url?.includes('/auth/mfa/verify');
 
         // If we get a 401 and haven't already tried to refresh
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
             originalRequest._retry = true;
 
             try {
@@ -79,11 +84,10 @@ api.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return api(originalRequest);
             } catch (refreshError) {
-                // Refresh failed — clear tokens and redirect to login
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                // Refresh failed — notify the app to clear session and show a popup
+                window.dispatchEvent(new CustomEvent('auth-error', { 
+                    detail: 'Your session has expired or is invalid. Please log in again.' 
+                }));
                 return Promise.reject(refreshError);
             }
         }

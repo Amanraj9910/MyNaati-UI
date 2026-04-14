@@ -27,6 +27,7 @@ app.use(helmet());
 app.use(cors({
     origin: [
         'http://localhost:5173',  // Vite dev server
+        'http://localhost:5174',  // Additional Vite port
         'http://localhost:3000',  // Alternate dev port
     ],
     credentials: true,  // Allow cookies for refresh tokens

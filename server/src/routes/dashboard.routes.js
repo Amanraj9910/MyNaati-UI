@@ -116,4 +116,12 @@ router.put('/profile', async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+router.get('/digital-id-card', async (req, res, next) => {
+    try {
+        const data = await dashboardService.getDigitalIdCard(req.user.userId);
+        if (!data) return res.json({ success: true, data: null });
+        res.json({ success: true, data });
+    } catch (error) { next(error); }
+});
+
 module.exports = router;

@@ -47,6 +47,8 @@ export function AuthProvider({ children }) {
                     localStorage.removeItem('refreshToken');
                     localStorage.removeItem('user');
                     setUser(null);
+                    // Show popup when /api/auth/me fails
+                    toast.error('Session expired. Please log in again.');
                 }
             }
 
@@ -54,6 +56,20 @@ export function AuthProvider({ children }) {
         };
 
         initAuth();
+
+        // Listen for global auth errors from api.js
+        const handleAuthError = (e) => {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            setUser(null);
+            
+            const message = e.detail || 'Authentication failed. Please log in again.';
+            toast.error(message);
+        };
+
+        window.addEventListener('auth-error', handleAuthError);
+        return () => window.removeEventListener('auth-error', handleAuthError);
     }, []);
 
     /**

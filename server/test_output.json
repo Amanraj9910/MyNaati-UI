@@ -1,0 +1,1 @@
+{"error":"resolveUserChain is not a function","stack":"TypeError: resolveUserChain is not a function\n    at test (D:\\MyNaati-UI\\server\\test_queries.js:15:36)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"}

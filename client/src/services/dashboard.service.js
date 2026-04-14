@@ -82,3 +82,9 @@ export const getTestResultDetails = async (id) => {
     const { data } = await api.get(`/dashboard/test-results/${id}`);
     return data;
 };
+
+/** GET /api/dashboard/digital-id-card — Digital ID card data */
+export const getDigitalIdCard = async () => {
+    const { data } = await api.get('/dashboard/digital-id-card');
+    return data;
+};

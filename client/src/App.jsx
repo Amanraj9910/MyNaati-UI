@@ -56,6 +56,7 @@ import BillsPage from './pages/bills/BillsPage';
 import ApplicationsPage from './pages/applications/ApplicationsPage';
 import LogbookPage from './pages/logbook/LogbookPage';
 import AccountPage from './pages/profile/AccountPage';
+import DigitalIdCardPage from './pages/credentials/DigitalIdCardPage';
 
 // Admin pages
 import DiagnosticsPage from './pages/admin/DiagnosticsPage';
@@ -112,6 +113,7 @@ function AppRoutes() {
 
           {/* Protected pages — require authentication */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/digital-id-card" element={<ProtectedRoute><DigitalIdCardPage /></ProtectedRoute>} />
           <Route path="/credentials" element={<ProtectedRoute><CredentialsPage /></ProtectedRoute>} />
           <Route path="/tests" element={<ProtectedRoute><TestsPage /></ProtectedRoute>} />
           <Route path="/test-results" element={<ProtectedRoute><TestResultsPage /></ProtectedRoute>} />

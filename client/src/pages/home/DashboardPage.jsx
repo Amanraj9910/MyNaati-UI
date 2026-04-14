@@ -4,7 +4,7 @@
  * =============================================================================
  * 
  * Candidate dashboard with real data from 7 DB-connected sections.
- * Shows welcome banner, summary stat cards, and 7 section tiles.
+ * Shows welcome banner, summary stat cards, Digital ID Card, and 7 section tiles.
  */
 
 import { useState, useEffect } from 'react';
@@ -14,10 +14,16 @@ import { getDashboardSummary } from '../../services/dashboard.service';
 import {
     User, Award, FileText, ClipboardList, Receipt,
     CreditCard, BookOpen, ArrowRight, TrendingUp,
-    Calendar, AlertCircle, Loader2
+    Calendar, AlertCircle, Loader2, Contact
 } from 'lucide-react';
 
 const SECTION_CONFIG = [
+    {
+        id: 'id-card', title: 'My Digital ID Card', path: '/digital-id-card',
+        icon: Contact, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)',
+        description: 'View your digital NAATI ID card',
+        statKey: null,
+    },
     {
         id: 'profile', title: 'My Account', path: '/profile',
         icon: User, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)',
@@ -72,8 +78,8 @@ export default function DashboardPage() {
         async function fetchDashboard() {
             try {
                 setLoading(true);
-                const response = await getDashboardSummary();
-                setDashboard(response.data || response);
+                const summaryRes = await getDashboardSummary();
+                setDashboard(summaryRes.data || summaryRes);
             } catch (err) {
                 console.error('Dashboard fetch error:', err);
                 setError('Failed to load dashboard data');
@@ -150,7 +156,6 @@ export default function DashboardPage() {
                     extra={`${stats.pdActivities ?? 0} activities`}
                 />
             </div>
-
             {/* Section Tiles */}
             <h2 className="dash-section-heading">Your Dashboard</h2>
             <div className="dash-tiles-grid">
@@ -196,3 +201,4 @@ function StatCard({ icon, label, value, color, extra }) {
         </div>
     );
 }
+

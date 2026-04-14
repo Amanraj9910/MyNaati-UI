@@ -18,6 +18,7 @@ const SystemValueModel = require('../models/SystemValue');
 const InvoiceModel = require('../models/Invoice');
 const ApplicationModel = require('../models/Application');
 const PDModel = require('../models/ProfessionalDevelopment');
+const CredentialIdCardModel = require('../models/CredentialIdCard');
 const AddressModel = require('../models/Address');
 const EmailModel = require('../models/Email');
 const PhoneModel = require('../models/Phone');
@@ -387,6 +388,49 @@ async function safeQuery(fn, fallback = 0) {
     }
 }
 
+/**
+ * Get the Digital ID Card data for a user.
+ * Assembles practitioner identity, photo, active credentials, and QR code.
+ */
+async function getDigitalIdCard(userId) {
+    const { personId, naatiNumber } = await resolveUserChain(userId);
+    if (!personId) return null;
+
+    // Fetch practitioner identity + photo
+    const idCardData = await safeQuery(
+        () => CredentialIdCardModel.getIdCardData(personId),
+        null
+    );
+    if (!idCardData) return null;
+
+    // Fetch all active credentials for the back of the card
+    const credentials = await safeQuery(
+        () => CredentialIdCardModel.getActiveCredentialsForCard(personId),
+        []
+    );
+
+    // Get QR code GUID from the primary (first) credential
+    let qrCodeGuid = null;
+    let verificationUrl = null;
+    if (credentials.length > 0) {
+        qrCodeGuid = await safeQuery(
+            () => CredentialIdCardModel.getQrCodeGuid(credentials[0].credentialId),
+            null
+        );
+        if (qrCodeGuid) {
+            verificationUrl = `https://mynaati.naati.com.au/VerifyCredential/Index/${qrCodeGuid}`;
+        }
+    }
+
+    return {
+        ...idCardData,
+        credentials,
+        qrCodeGuid,
+        verificationUrl,
+        hasActiveCredentials: credentials.length > 0,
+    };
+}
+
 module.exports = {
     getDashboardSummary,
     getCredentials,
@@ -401,4 +445,5 @@ module.exports = {
     createApplication,
     getTestResults,
     getTestResultDetails,
+    getDigitalIdCard,
 };
