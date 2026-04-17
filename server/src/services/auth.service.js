@@ -339,8 +339,10 @@ async function forgotPassword(email, requestOrigin) {
     const resetToken = generateMfaToken(membership.UserId);
 
     // Construct Reset URL (Frontend URL)
-    // Use the request origin if available, otherwise fallback to env or localhost
-    const fallbackUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Use the request origin if available, otherwise fallback to Azure env, custom env, or localhost
+    const fallbackUrl = process.env.WEBSITE_HOSTNAME 
+        ? `https://${process.env.WEBSITE_HOSTNAME}` 
+        : (process.env.FRONTEND_URL || 'http://localhost:5173');
     const frontendUrl = requestOrigin || fallbackUrl;
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
