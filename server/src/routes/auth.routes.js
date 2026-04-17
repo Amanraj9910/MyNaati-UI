@@ -107,7 +107,11 @@ router.post('/refresh-token', async (req, res, next) => {
  */
 router.post('/forgot-password', passwordResetRateLimiter, forgotPasswordValidation, validate, async (req, res, next) => {
     try {
-        const result = await authService.forgotPassword(req.body.email);
+        let origin = req.headers.origin;
+        if (!origin && req.headers.referer) {
+            try { origin = new URL(req.headers.referer).origin; } catch (e) {}
+        }
+        const result = await authService.forgotPassword(req.body.email, origin);
 
         res.json({
             success: true,

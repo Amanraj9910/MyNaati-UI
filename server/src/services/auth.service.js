@@ -322,9 +322,10 @@ async function changePassword(userId, currentPassword, newPassword) {
  * Looks up user via aspnet_Membership email (NOT tblUser).
  * 
  * @param {string} email - The user's email address
+ * @param {string} requestOrigin - The origin of the HTTP request
  * @returns {Promise<Object>} Reset token info
  */
-async function forgotPassword(email) {
+async function forgotPassword(email, requestOrigin) {
     const membership = await AspnetMembershipModel.findByEmail(email);
 
     // Always return success to prevent email enumeration attacks
@@ -338,8 +339,9 @@ async function forgotPassword(email) {
     const resetToken = generateMfaToken(membership.UserId);
 
     // Construct Reset URL (Frontend URL)
-    // Assuming frontend is running on localhost:5173 or configured via env
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Use the request origin if available, otherwise fallback to env or localhost
+    const fallbackUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = requestOrigin || fallbackUrl;
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     // Send email
